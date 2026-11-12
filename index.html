@@ -473,8 +473,9 @@ const svgIn = (box, w, h) => { box.innerHTML = ''; box.style.minHeight = h + 'px
 const textW = (svg, s, size) => { const t = svg.append('text').attr('font-size', size).text(s); const w = t.node().getComputedTextLength(); t.remove(); return w; };
 
 /* grouped horizontal bars: this year vs last year, label = value (trend) */
-function groupedBars(box, rows, nameKey) {
-  const w = Math.max(320, box.clientWidth), rowH = nameKey === 'pqd' ? 58 : 40, rows2 = rows.filter((r) => r[F.ty()] > 0 || r[F.ly()] > 0);
+function groupedBars(box, rows, nameKey, fillH) {
+  const rows2 = rows.filter((r) => r[F.ty()] > 0 || r[F.ly()] > 0);
+  const w = Math.max(320, box.clientWidth), rowH = fillH && rows2.length ? Math.max(34, (fillH - 28) / rows2.length) : (nameKey === 'pqd' ? 58 : 40);
   if (!rows2.length) { box.innerHTML = ''; return; }
   const h = rows2.length * rowH + 28;
   const svg = svgIn(box, w, h);
@@ -494,9 +495,9 @@ function groupedBars(box, rows, nameKey) {
 }
 
 /* diverging change bars with names at the zero line */
-function changeBars(box, rows, nameKey, sortByChange) {
-  const w = Math.max(320, box.clientWidth), rowH = 36;
+function changeBars(box, rows, nameKey, sortByChange, fillH) {
   let rows2 = rows.filter((r) => r[F.ty()] > 0 || r[F.ly()] > 0);
+  const w = Math.max(320, box.clientWidth), rowH = fillH && rows2.length ? Math.max(30, (fillH - 28) / rows2.length) : 36;
   if (sortByChange) rows2 = rows2.slice().sort((a, b) => b[F.chg()] - a[F.chg()]);
   if (!rows2.length) { box.innerHTML = ''; return; }
   const h = rows2.length * rowH + 28, svg = svgIn(box, w, h);
@@ -590,7 +591,7 @@ function dailyChart(box, rows) {
 function pieChart(box, rows) {
   /* report style: large slices carry their label inside (white), small ones are labelled outside on leader lines */
   const PIE = { 'INDY C-STORE': '#118dff', 'CHAIN C-STORE': '#12239e', 'GROCERY': '#e66c37', 'LIQUOR': '#6b007b', 'DRUG': '#e044a7', 'OTHER': '#744ec2', 'ON-PREMISE': '#d9b300', 'NON-RETAIL': '#d64550' };
-  const w = Math.max(320, box.clientWidth), h = 340, cx = w / 2, cy = h / 2 + 6, R = Math.min(h / 2 - 34, w * 0.24), svg = svgIn(box, w, h);
+  const w = Math.max(320, box.clientWidth), h = 430, cx = w * 0.6, cy = h / 2 + 4, R = Math.min(h / 2 - 28, w * 0.31), svg = svgIn(box, w, h);
   const r2 = sel(rows).filter((r) => r[F.ty()] > 0), total = d3.sum(r2, (r) => r[F.ty()]);
   const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R), inner = d3.arc().innerRadius(R * 0.55).outerRadius(R * 0.55);
   const color = (d, i) => PIE[d.data.segment] || dash.colors[i % dash.colors.length];
@@ -615,7 +616,7 @@ function pieChart(box, rows) {
     const maxY = cy - 18; for (let i = L.length - 1; i >= 0; i--) { if (L[i].y > maxY) L[i].y = maxY; if (i < L.length - 1 && L[i + 1].y - L[i].y < gap) L[i].y = L[i + 1].y - gap; }
   }
   const maxTxt = d3.max(labs, (l) => Math.max(textW(svg, l.d.data.segment, 11), textW(svg, fmt(l.d.data[F.ty()]) + ' (' + share(l.d) + ')', 12))) || 60;
-  const tx = (l) => (l.right ? 1 : -1) * Math.max(R + 26, Math.min(labR + 40, cx - maxTxt - 6));
+  const tx = (l) => (l.right ? 1 : -1) * Math.max(R + 26, Math.min(labR + 40, (l.right ? w - cx : cx) - maxTxt - 6));
   g.selectAll('polyline').data(labs).join('polyline').attr('fill', 'none').attr('stroke', '#8a8a8a').attr('stroke-width', 1)
     .attr('points', (l) => `${l.ex},${l.ey} ${l.kx},${l.y} ${tx(l) - (l.right ? 4 : -4)},${l.y}`);
   const to = g.selectAll('.po').data(labs).join('text').attr('x', tx).attr('y', (l) => l.y).attr('text-anchor', (l) => l.right ? 'start' : 'end').attr('font-size', 11).attr('fill', 'var(--color-fg)');
@@ -717,7 +718,13 @@ dash.onData(() => {
   if (page === 'mtd-pqd' && byPqd) { draw('c-pqd-mtd', (b) => groupedBars(b, pqdRows('MTD'), 'pqd')); draw('c-pqd-mtdchg', (b) => changeBars(b, pqdRows('MTD'), 'pqd', true)); }
   if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBarsSplit(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'supplier')); table($('#tb-sup'), sup, 'supplier', 20); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true)); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false)); }
   if (page === 'ytd-brand' && bf) { draw('c-bf-bar', (b) => groupedBars(b, sel(bf).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'brand_family')); table($('#tb-bf'), bf, 'brand_family', 20); draw('c-bf-up', (b) => movers(b, sel(bf), 'brand_family', true)); draw('c-bf-down', (b) => movers(b, sel(bf), 'brand_family', false)); }
-  if (page === 'ytd-segment' && seg) { draw('c-seg-bar', (b) => groupedBars(b, sel(seg), 'segment')); draw('c-seg-pie', (b) => pieChart(b, seg)); table($('#tb-seg'), seg, 'segment', null); draw('c-seg-chg', (b) => changeBars(b, sel(seg), 'segment', false)); }
+  if (page === 'ytd-segment' && seg) {
+    draw('c-seg-pie', (b) => pieChart(b, seg)); table($('#tb-seg'), seg, 'segment', null);
+    const mid = $('#ytd-segment .grid > div:nth-child(2)'), midH = mid ? mid.offsetHeight : 0;
+    const fill = (id) => { const box = document.getElementById(id), card = box.closest('.card'); if (!midH) return undefined; const used = card.offsetHeight - box.offsetHeight; return Math.max(0, midH - used); };
+    draw('c-seg-bar', (b) => groupedBars(b, sel(seg), 'segment', fill('c-seg-bar')));
+    draw('c-seg-chg', (b) => changeBars(b, sel(seg), 'segment', false, fill('c-seg-chg')));
+  }
   if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty).slice(0, 10), 'chain')); table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true, (r) => r.is_chain)); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false, (r) => r.is_chain)); }
   // failed sources
   $$('.chart').forEach((box) => { const ids = (box.dataset.source || '').split(' '); if (ids.some((id) => dash.data(id).status === 'error')) { box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:80px;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)"><span style="width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad);display:inline-block"></span>Failed to load</div>'; } });
