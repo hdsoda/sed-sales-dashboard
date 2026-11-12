@@ -161,7 +161,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=YTD&amp;wh=ALL" data-plain="1" id="t-ytd-pct">—</div></div>
   </div>
   <div class="grid" style="grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="by PQD">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-pqd-ytd" data-source="by_pqd"></div></div>
     <div class="card"><h2 class="ttl-trend">Monthly Volume (CEs) trend</h2><p class="note subwin">—</p>
@@ -191,7 +191,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
   <div class="grid">
-    <div class="card"><h2 class="ttl-mtd">MTD volume (CEs)</h2><p class="note mtdnote">—</p>
+    <div class="card"><h2 class="ttl-mtd" data-suffix="by PQD">MTD volume (CEs)</h2><p class="note mtdnote">—</p>
       <div class="legend"><span><i class="sw-ty"></i>This Year (MTD)</span><span><i class="sw-ly"></i>Last Year (MTD)</span></div>
       <div class="chart rel" id="c-pqd-mtd" data-source="by_pqd"></div></div>
     <div class="card"><h2 class="ttl-mtdchg">MTD volume change (CEs)</h2><p class="note mtdnote">—</p>
@@ -202,10 +202,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== YTD by Supplier ===== -->
 <section class="page" id="ytd-supplier" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="top 10 suppliers">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-sup-bar" data-source="sup_top"></div></div>
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="top 20 suppliers, ranked">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="tbox"><table id="tb-sup" data-source="sup_top" data-row-key="supplier"><thead><tr><th data-field="supplier">Supplier</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     <div>
       <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">—</p><div class="chart rel" id="c-sup-up" data-source="sup_top"></div></div>
@@ -217,10 +217,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== YTD by Brand Family ===== -->
 <section class="page" id="ytd-brand" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="top 10 brand families">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-bf-bar" data-source="bf_top"></div></div>
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="top 20 brand families, ranked">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="tbox"><table id="tb-bf" data-source="bf_top" data-row-key="brand_family"><thead><tr><th data-field="brand_family">Brand Family</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     <div>
       <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">—</p><div class="chart rel" id="c-bf-up" data-source="bf_top"></div></div>
@@ -232,12 +232,12 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== YTD by Market Segment ===== -->
 <section class="page" id="ytd-segment" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="by market segment">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-seg-bar" data-source="seg"></div></div>
     <div>
-      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p><div class="chart rel pie" id="c-seg-pie" data-source="seg"></div></div>
-      <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2 class="ttl-ytd" data-suffix="share of total">YTD volume (CEs)</h2><p class="note subwin">—</p><div class="chart rel pie" id="c-seg-pie" data-source="seg"></div></div>
+      <div class="card"><h2 class="ttl-ytd" data-suffix="segment detail, by change">YTD volume (CEs)</h2><p class="note subwin">—</p>
         <div class="tbox"><table id="tb-seg" data-source="seg" data-row-key="segment" data-sort="chg"><thead><tr><th data-field="segment">Mkt. Seg.</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     </div>
     <div class="card"><h2 class="ttl-ytdchg">YTD volume change (CEs)</h2><p class="note subwin">—</p><div class="chart rel" id="c-seg-chg" data-source="seg"></div></div>
@@ -247,10 +247,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== YTD by Chain ===== -->
 <section class="page" id="ytd-chain" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="top 10 chains">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-ch-bar" data-source="chain_top"></div></div>
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+    <div class="card"><h2 class="ttl-ytd" data-suffix="top 20 chains, ranked">YTD volume (CEs)</h2><p class="note subwin">—</p>
       <div class="tbox"><table id="tb-ch" data-source="chain_top" data-row-key="chain"><thead><tr><th data-field="chain">Chain</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     <div>
       <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">—</p><div class="chart rel" id="c-ch-up" data-source="chain_top"></div></div>
@@ -730,8 +730,9 @@ dash.onData(() => {
   $$('.page').forEach((s) => { s.hidden = s.id !== state.page; });
   { const f = $('.foot'); if (f) f.hidden = state.page !== 'ytd-pqd'; } // the method note shows on the first page only
   $$('.mname').forEach((e) => e.textContent = mname()); $$('.mshort').forEach((e) => e.textContent = mname());
-  $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}`);
-  $$('.ttl-mtd').forEach((e) => e.textContent = `MTD ${mname()}`);
+  const sfx = (e) => e.dataset.suffix ? ` — ${e.dataset.suffix}` : ''; // tells same-named cards on a page apart
+  $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}` + sfx(e));
+  $$('.ttl-mtd').forEach((e) => e.textContent = `MTD ${mname()}` + sfx(e));
   $$('.ttl-trend').forEach((e) => e.textContent = `Monthly ${isGP() ? 'Gross profit ($)' : 'Volume (CEs)'} trend`);
   $$('.ttl-daily').forEach((e) => e.textContent = `Daily ${mname()} — this year vs last year`);
   $$('.ttl-mtdchg').forEach((e) => e.textContent = `MTD ${isGP() ? 'gross profit change ($)' : 'volume change (CEs)'}`);
