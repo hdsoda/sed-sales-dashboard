@@ -18,7 +18,7 @@
   --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12); --cds-text-secondary: #6b6b6b; --cds-dur-slow: .3s;
 }
 html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
-.sed th, .sed td { padding: 3px 5px !important; }
+.sed th, .sed td { padding: var(--rowpad, 3px) 5px !important; }
 .sed .tbox table { table-layout: auto; }
 #dash-root { margin: 0; padding: 0; max-width: none; }
 .public-note { font-size: 11px; color: var(--color-fg-muted); text-align: right; margin: 6px 0 0 0; }
@@ -59,7 +59,13 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .sdt .sd .k { color: var(--color-bad); font-size: 10px; line-height: 1.2; }
   .sed .sdt .sd .v { color: var(--color-bad); font-size: 20px; font-weight: 700; line-height: 1.2; }
   .sed .page[hidden] { display: none; }
-  .sed .page { margin-top: 12px; }
+  .sed .page { margin-top: 12px; position: relative; }
+  /* per-page zoom pill: sits on the right end of the page's top header bar */
+  .sed .zoomer { position: absolute; top: 4px; right: 5px; z-index: 5; display: inline-flex; align-items: center; background: #fff; border: 1px solid #c9ccd8; border-radius: 3px; font-size: 11px; line-height: 1; height: 21px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .sed .zoomer button { background: none; border: 0; width: 22px; height: 100%; padding: 0; font: inherit; font-size: 13px; color: #444; cursor: pointer; }
+  .sed .zoomer button:hover { background: #eef3f8; }
+  .sed .zoomer .zv { min-width: 36px; text-align: center; font-weight: 700; color: #333; font-size: 10px; }
+  .sed .zoomer .zreset { font-size: 11px; border-left: 1px solid #e3e3e3; }
   .sed .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); align-items: start; }
   .sed .grid.one { grid-template-columns: 1fr; }
   /* ---- cards: white body, gray header bar ---- */
@@ -106,6 +112,9 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   [data-dash-source-state=empty] { color: transparent; }
   [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
   .sed .foot { color: var(--color-fg-muted); font-size: 11px; margin-top: var(--cds-gap-lg); }
+  /* room for the zoom pill on the page's top header bar */
+  .sed .tiles .strip-head { padding-right: 122px; }
+  .sed .page > .grid > *:last-child > .card:first-child > h2, .sed .page > .grid > .card:last-child > h2 { padding-right: 122px; }
   @media (max-width: 900px) { .sed { grid-template-columns: 1fr; } .sed .side { position: static; height: auto; padding-bottom: 8px; } .sed .tabs { flex-direction: row; flex-wrap: wrap; padding: 0 12px; } .sed .tabs button { border-left: 0; border-bottom: 3px solid transparent; padding: 8px 10px; font-size: 14px; } .sed .tabs button[aria-selected="true"] { border-bottom-color: #fff; } }
 </style>
 
@@ -517,10 +526,10 @@ function changeBars(box, rows, nameKey, sortByChange, fillH) {
 }
 
 /* movers: top 5 gainers or bottom 5 decliners within the top 20 */
-function movers(box, rows, nameKey, up, keep) {
+function movers(box, rows, nameKey, up, keep, fillH) {
   const r2 = rows.filter((r) => r.rank <= 20 && (!keep || keep(r))).slice().sort((a, b) => up ? b[F.chg()] - a[F.chg()] : a[F.chg()] - b[F.chg()]).filter((r) => up ? r[F.chg()] > 0 : r[F.chg()] < 0).slice(0, 5);
   if (!r2.length) { box.innerHTML = '<p class="note">none</p>'; return; }
-  const w = Math.max(280, box.clientWidth), rowH = 30, h = r2.length * rowH + 8, svg = svgIn(box, w, h);
+  const w = Math.max(280, box.clientWidth), rowH = fillH ? Math.max(26, (fillH - 8) / r2.length) : 30, h = r2.length * rowH + 8, svg = svgIn(box, w, h);
   const lab = (r) => fmtS(r[F.chg()]) + ' (' + (r[F.ly()] === 0 ? 'New' : pct(r[F.pct()])) + ')';
   const nameW = d3.max(r2, (r) => textW(svg, r[nameKey].slice(0, 18), 12)) + 10, labW = d3.max(r2, (r) => textW(svg, lab(r), 11)) + 8;
   const x = d3.scaleLinear([0, d3.max(r2, (r) => Math.abs(r[F.chg()])) || 1], [0, w - nameW - labW - 12]);
@@ -539,11 +548,11 @@ function movers(box, rows, nameKey, up, keep) {
 }
 
 /* monthly small multiples per PQD: TY line through the last complete month, LY bars for all months */
-function trendPanels(box, trend, byPqd, asOf) {
+function trendPanels(box, trend, byPqd, asOf, fillH) {
   const w = Math.max(320, box.clientWidth);
   const tys = Number(asOf.slice(0, 4)), lastMonth = Number(asOf.slice(5, 7)) - 1; // last complete month this year
   const pqds = sel(byPqd).filter((r) => r.scope === 'YTD' && r.pqd !== 'THC').sort((a, b) => b.ce_ty - a.ce_ty).map((r) => r);
-  const cols = w > 560 ? 3 : 2, pw = (w - (cols - 1) * 12) / cols, ph = 205, rowsN = Math.ceil(pqds.length / cols), h = rowsN * (ph + 12);
+  const cols = w > 560 ? 3 : 2, pw = (w - (cols - 1) * 12) / cols, rowsN = Math.ceil(pqds.length / cols), ph = fillH && rowsN ? Math.max(150, (fillH - (rowsN - 1) * 12) / rowsN) : 205, h = rowsN * (ph + 12) - 12;
   const svg = svgIn(box, w, h); const m = { t: 34, r: 10, b: 20, l: 10 };
   pqds.forEach((p, i) => {
     const gx = (i % cols) * (pw + 12), gy = Math.floor(i / cols) * (ph + 12);
@@ -566,8 +575,8 @@ function trendPanels(box, trend, byPqd, asOf) {
 }
 
 /* daily: LY bars (same weekday 364 back), TY line with value labels */
-function dailyChart(box, rows) {
-  const w = Math.max(360, box.clientWidth), h = 360, m = { t: 24, r: 16, b: 40, l: 8 }, svg = svgIn(box, w, h);
+function dailyChart(box, rows, fillH) {
+  const w = Math.max(360, box.clientWidth), h = fillH ? Math.max(260, fillH) : 360, m = { t: 24, r: 16, b: 40, l: 8 }, svg = svgIn(box, w, h);
   const r2 = sel(rows);
   const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; const dayInfo = new Map(r2.map((r) => { const d = new Date(r.date_ty + 'T00:00:00'); return [r.day, { wd: WD[d.getDay()], md: (d.getMonth() + 1) + '/' + d.getDate(), wk: d.getDay() === 0 || d.getDay() === 6 }]; }));
   const yMax = d3.max(r2, (r) => Math.max(r[F.ty()] || 0, r[F.ly()] || 0)) || 1;
@@ -588,10 +597,10 @@ function dailyChart(box, rows) {
 }
 
 /* share pie */
-function pieChart(box, rows) {
+function pieChart(box, rows, fillH) {
   /* report style: large slices carry their label inside (white), small ones are labelled outside on leader lines */
   const PIE = { 'INDY C-STORE': '#118dff', 'CHAIN C-STORE': '#12239e', 'GROCERY': '#e66c37', 'LIQUOR': '#6b007b', 'DRUG': '#e044a7', 'OTHER': '#744ec2', 'ON-PREMISE': '#d9b300', 'NON-RETAIL': '#d64550' };
-  const w = Math.max(320, box.clientWidth), h = 340, cx = w * 0.6, cy = h / 2 + 2, R = Math.min(h / 2 - 22, w * 0.31), svg = svgIn(box, w, h);
+  const w = Math.max(320, box.clientWidth), h = fillH ? Math.max(240, fillH) : 340, cx = w * 0.6, cy = h / 2 + 2, R = Math.min(h / 2 - 22, w * 0.31), svg = svgIn(box, w, h);
   const r2 = sel(rows).filter((r) => r[F.ty()] > 0), total = d3.sum(r2, (r) => r[F.ty()]);
   const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R), inner = d3.arc().innerRadius(R * 0.55).outerRadius(R * 0.55);
   const color = (d, i) => PIE[d.data.segment] || dash.colors[i % dash.colors.length];
@@ -644,19 +653,66 @@ function table(tbl, rows, key, limit) {
 }
 
 /* supplier chart as the report draws it: the two majors on their own scale, then ranks 3–10 on theirs */
-function groupedBarsSplit(box, rows, nameKey) {
+function groupedBarsSplit(box, rows, nameKey, fillH) {
   box.innerHTML = '';
-  const top = rows.slice(0, 2), rest = rows.slice(2, 10);
-  for (const [cap, part] of [['majors — own scale', top], ['ranked 3–10 — own scale', rest]]) {
-    if (!part.length) continue;
+  const top = rows.slice(0, 2), rest = rows.slice(2, 10), parts = [['majors — own scale', top], ['ranked 3–10 — own scale', rest]].filter((p) => p[1].length);
+  const subs = parts.map(([cap, part]) => {
     const c = document.createElement('div'); c.className = 'split-cap'; c.textContent = cap; box.appendChild(c);
-    const sub = document.createElement('div'); sub.className = 'rel'; box.appendChild(sub);
-    groupedBars(sub, part, nameKey);
-  }
+    const sub = document.createElement('div'); sub.className = 'rel'; box.appendChild(sub); return { sub, part, cap: c };
+  });
+  // share the fill height between the two panels in proportion to their row counts (each panel carries 28px of axis)
+  const capH = d3.sum(subs, (s) => s.cap.offsetHeight), n = d3.sum(subs, (s) => s.part.length), avail = fillH ? fillH - capH - subs.length * 28 : 0;
+  subs.forEach((s) => groupedBars(s.sub, s.part, nameKey, fillH ? Math.max(0, avail * s.part.length / n) + 28 : undefined));
 }
 
 /* ---------- controls ---------- */
 const $ = (s, root) => (root || document).querySelector(s), $$ = (s, root) => [...(root || document).querySelectorAll(s)];
+
+/* ---------- fit a page to the window: every column ends on the same line, no vertical scroll ----------
+   The page's content height is whatever the window leaves below the title band and above the footer.
+   Each grid column is given that height; a column of two cards shares it (a table keeps its natural
+   height, the charts take the rest). Charts are then drawn at the height they were given. */
+const ZOOM = { key: 'sed-zoom', steps: [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.5], by: {} };
+try { Object.assign(ZOOM.by, JSON.parse(localStorage.getItem(ZOOM.key) || '{}')); } catch (e) {}
+const zoomOf = (id) => ZOOM.by[id] || 1;
+function applyZoom(sec) {
+  const z = zoomOf(sec.id), pill = sec.querySelector('.zoomer .zv'); if (pill) pill.textContent = Math.round(z * 100) + '%';
+  if (CSS.supports('zoom', '1')) sec.style.zoom = z;
+  else { sec.style.transformOrigin = '0 0'; sec.style.transform = z === 1 ? '' : `scale(${z})`; sec.style.width = z === 1 ? '' : (100 / z) + '%'; }
+}
+function fitPage(id) {
+  const sec = document.getElementById(id), out = {}; if (!sec || sec.hidden) return out;
+  const z = zoomOf(id), foot = $('.foot'), main = $('.main');
+  const below = (foot ? foot.offsetHeight + parseFloat(getComputedStyle(foot).marginTop) : 0) + parseFloat(getComputedStyle(main).paddingBottom);
+  const T = (window.innerHeight - sec.getBoundingClientRect().top - below) / z; // page height, in the page's own (zoomed) pixels
+  if (T < 420) return out; // too small a window to fit: let the page scroll at its natural size
+  const grid = sec.querySelector(':scope > .grid'); if (!grid) return out;
+  const gap = parseFloat(getComputedStyle(grid).gap) || 12;
+  const G = T - (grid.getBoundingClientRect().top - sec.getBoundingClientRect().top) / z - parseFloat(getComputedStyle(grid).marginBottom); // height left for the grid
+  const chrome = (card, box) => card.offsetHeight - box.offsetHeight; // header, subtitle, legend, padding around the chart
+  for (const col of grid.children) {
+    const cards = col.classList.contains('card') ? [col] : [...col.querySelectorAll(':scope > .card')];
+    const fixed = cards.filter((c) => c.querySelector('.tbox')), flex = cards.filter((c) => c.querySelector('.chart'));
+    if (!flex.length && fixed.length === 1) { const c = fixed[0], tb = c.querySelector('.tbox'); c.style.height = ''; const ch = chrome(c, tb); c.style.boxSizing = 'border-box'; c.style.height = G + 'px'; tb.style.maxHeight = Math.max(120, G - ch) + 'px';
+      const tbl = tb.querySelector('table'); if (tbl) { tbl.style.setProperty('--rowpad', '3px'); const extra = (G - ch) - tbl.offsetHeight, n = tbl.rows.length || 1; tbl.style.setProperty('--rowpad', (3 + Math.max(0, Math.min(5, extra / n / 2))).toFixed(1) + 'px'); } continue; }
+    let avail = G - gap * (cards.length - 1);
+    for (const c of fixed) { c.style.height = ''; const tb = c.querySelector('.tbox'); tb.style.maxHeight = Math.max(120, G * 0.45) + 'px'; avail -= c.offsetHeight; }
+    const share = avail / Math.max(1, flex.length);
+    for (const c of flex) { const box = c.querySelector('.chart'); out[box.id] = Math.max(0, share - chrome(c, box)); }
+  }
+  return out;
+}
+$$('.page').forEach((sec) => {
+  const pill = document.createElement('div'); pill.className = 'zoomer'; pill.title = 'Zoom this page';
+  pill.innerHTML = '<button data-z="-" aria-label="Zoom out">−</button><span class="zv">100%</span><button data-z="+" aria-label="Zoom in">+</button><button class="zreset" data-z="0" aria-label="Reset zoom" title="Reset to 100%">⟲</button>';
+  pill.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const cur = zoomOf(sec.id), i = ZOOM.steps.indexOf(cur), next = b.dataset.z === '0' ? 1 : ZOOM.steps[Math.max(0, Math.min(ZOOM.steps.length - 1, (i < 0 ? 5 : i) + (b.dataset.z === '+' ? 1 : -1)))];
+    ZOOM.by[sec.id] = next; try { localStorage.setItem(ZOOM.key, JSON.stringify(ZOOM.by)); } catch (err) {}
+    applyZoom(sec); dash.setParams({}); // redraw the page at its new size
+  });
+  sec.appendChild(pill); applyZoom(sec);
+});
 $$('.m-btn').forEach((b) => b.addEventListener('click', () => { state.metric = b.dataset.metric; dash.setParams({ metric: state.metric }); }));
 $$('.w-btn').forEach((b) => b.addEventListener('click', () => { state.wh = b.dataset.wh; dash.setParams({ wh: state.wh }); }));
 const PAGE_TITLES = { 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
@@ -714,19 +770,19 @@ dash.onData(() => {
   const pqdRows = (scope) => byPqd ? sel(byPqd).filter((r) => r.scope === scope).sort((a, b) => b.ce_ty - a.ce_ty) : null;
   const page = state.page;
   const draw = (id, fn) => { const box = document.getElementById(id); if (!box || box.closest('.page').hidden) return; fn(box); };
-  if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd')); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of)); }
-  if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily));
-  if (page === 'mtd-pqd' && byPqd) { draw('c-pqd-mtd', (b) => groupedBars(b, pqdRows('MTD'), 'pqd')); draw('c-pqd-mtdchg', (b) => changeBars(b, pqdRows('MTD'), 'pqd', true)); }
-  if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBarsSplit(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'supplier')); table($('#tb-sup'), sup, 'supplier', 20); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true)); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false)); }
-  if (page === 'ytd-brand' && bf) { draw('c-bf-bar', (b) => groupedBars(b, sel(bf).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'brand_family')); table($('#tb-bf'), bf, 'brand_family', 20); draw('c-bf-up', (b) => movers(b, sel(bf), 'brand_family', true)); draw('c-bf-down', (b) => movers(b, sel(bf), 'brand_family', false)); }
-  if (page === 'ytd-segment' && seg) {
-    draw('c-seg-pie', (b) => pieChart(b, seg)); table($('#tb-seg'), seg, 'segment', null);
-    const mid = $('#ytd-segment .grid > div:nth-child(2)'), midH = mid ? mid.offsetHeight : 0;
-    const fill = (id) => { const box = document.getElementById(id), card = box.closest('.card'); if (!midH) return undefined; const used = card.offsetHeight - box.offsetHeight; return Math.max(0, midH - used); };
-    draw('c-seg-bar', (b) => groupedBars(b, sel(seg), 'segment', fill('c-seg-bar')));
-    draw('c-seg-chg', (b) => changeBars(b, sel(seg), 'segment', false, fill('c-seg-chg')));
-  }
-  if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty).slice(0, 10), 'chain')); table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true, (r) => r.is_chain)); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false, (r) => r.is_chain)); }
+  // tables first: their natural height is what the charts beside them are fitted to
+  if (page === 'ytd-supplier' && sup) table($('#tb-sup'), sup, 'supplier', 20);
+  if (page === 'ytd-brand' && bf) table($('#tb-bf'), bf, 'brand_family', 20);
+  if (page === 'ytd-segment' && seg) table($('#tb-seg'), seg, 'segment', null);
+  if (page === 'ytd-chain' && ch) table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20);
+  const fill = fitPage(page); // chart box id -> height that makes every column end on the same line
+  if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd', fill['c-pqd-ytd'])); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of, fill['c-trend'])); }
+  if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily, fill['c-daily']));
+  if (page === 'mtd-pqd' && byPqd) { draw('c-pqd-mtd', (b) => groupedBars(b, pqdRows('MTD'), 'pqd', fill['c-pqd-mtd'])); draw('c-pqd-mtdchg', (b) => changeBars(b, pqdRows('MTD'), 'pqd', true, fill['c-pqd-mtdchg'])); }
+  if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBarsSplit(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'supplier', fill['c-sup-bar'])); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true, null, fill['c-sup-up'])); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false, null, fill['c-sup-down'])); }
+  if (page === 'ytd-brand' && bf) { draw('c-bf-bar', (b) => groupedBars(b, sel(bf).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'brand_family', fill['c-bf-bar'])); draw('c-bf-up', (b) => movers(b, sel(bf), 'brand_family', true, null, fill['c-bf-up'])); draw('c-bf-down', (b) => movers(b, sel(bf), 'brand_family', false, null, fill['c-bf-down'])); }
+  if (page === 'ytd-segment' && seg) { draw('c-seg-pie', (b) => pieChart(b, seg, fill['c-seg-pie'])); draw('c-seg-bar', (b) => groupedBars(b, sel(seg), 'segment', fill['c-seg-bar'])); draw('c-seg-chg', (b) => changeBars(b, sel(seg), 'segment', false, fill['c-seg-chg'])); }
+  if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty).slice(0, 10), 'chain', fill['c-ch-bar'])); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true, (r) => r.is_chain, fill['c-ch-up'])); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false, (r) => r.is_chain, fill['c-ch-down'])); }
   // failed sources
   $$('.chart').forEach((box) => { const ids = (box.dataset.source || '').split(' '); if (ids.some((id) => dash.data(id).status === 'error')) { box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:80px;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)"><span style="width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad);display:inline-block"></span>Failed to load</div>'; } });
   if (!drawn && byPqd) { drawn = true; const named = document.getElementById(location.hash.slice(1)); if (named) named.scrollIntoView(); }
