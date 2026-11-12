@@ -21,8 +21,6 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 .sed th, .sed td { padding: var(--rowpad, 3px) 5px !important; }
 .sed .tbox table { table-layout: auto; }
 #dash-root { margin: 0; padding: 0; max-width: none; }
-.public-note { font-size: 11px; color: var(--color-fg-muted); text-align: right; margin: 6px 0 0 0; }
-.public-note .muted { opacity: .8; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 </head>
@@ -48,6 +46,18 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .band h1 { font-family: var(--font-anthropic-sans); font-size: 20px; font-weight: 700; margin: 0; }
   .sed .band .sub { color: #dbe6f2; font-size: 11px; font-style: italic; margin-top: 3px; }
   .sed .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  /* data status, in the middle of the band */
+  .sed .band > div:first-child { flex: 0 0 auto; }
+  .sed .public-note { flex: 1 1 auto; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px 0; margin: 0 8px; color: #dbe6f2; font-size: 11px; text-align: center; }
+  .sed .public-note .st { display: flex; flex-direction: column; align-items: flex-start; padding: 2px 14px; border-left: 1px solid rgba(255,255,255,.28); text-align: left; }
+  .sed .public-note .st:first-child { border-left: 0; }
+  .sed .public-note .st .k { font-size: 10px; color: #b9cde3; line-height: 1.2; white-space: nowrap; }
+  .sed .public-note .st .v { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.3; white-space: nowrap; }
+  .sed .public-note .st .v small { font-weight: 400; font-size: 11px; color: #dbe6f2; }
+  .sed .public-note a.btn { margin-left: 14px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.4); border-radius: 3px; padding: 6px 12px; color: #fff; font-weight: 700; font-size: 12px; text-decoration: none; cursor: pointer; white-space: nowrap; }
+  .sed .public-note a.btn:hover { background: rgba(255,255,255,.22); }
+  .sed .public-note a.btn small { font-weight: 400; color: #dbe6f2; }
+  .sed .public-note .muted { opacity: .8; }
   .sed .ctl { background: #fff; color: var(--color-fg); border: 1px solid #c9ccd8; padding: 4px 6px 6px; }
   .sed .ctl .lbl { font-size: 10px; font-weight: 700; color: #333; margin: 0 0 3px 2px; }
   .sed .seg { display: inline-flex; border: 1px solid #c9ccd8; overflow: hidden; }
@@ -138,6 +148,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     <h1 id="title">YTD Sales by PQD</h1>
     <div class="sub">'26 vs same period. '25 ~ <b>Source:</b> Snowflake (SED_DB)</div>
   </div>
+  <div class="public-note">Loading…</div>
   <div class="controls">
     <div class="ctl"><div class="lbl">Metric</div><div class="seg" role="group" aria-label="Metric">
       <button class="m-btn" data-metric="ce" aria-pressed="true">Volume<br>(CEs)</button>
@@ -151,7 +162,6 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     </div>
   </div>
 </div>
-<p class="public-note">Loading…</p>
 
 <!-- ===== YTD by PQD ===== -->
 <section class="page" id="ytd-pqd">
@@ -274,12 +284,15 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   let booted = false;
   function render(payload, label) {
     window.__SED_DATA = payload;
-    if (!booted) { window.sedBoot(); window.sedCalcs(); window.sedRender(); booted = true; }
-    else { window.dash.setParams({}); }
     const q = payload.meta || {};
     const asOf = (payload.windows && payload.windows[0] && payload.windows[0].as_of) || ''; const mdy2 = (s) => s ? (+s.slice(5, 7)) + '/' + (+s.slice(8, 10)) + '/' + s.slice(0, 4) : '';
-    note.innerHTML = 'Last complete day of sales ' + mdy2(asOf) + ' · ' + label + ' · queried ' + fmt(q.queried_at) + ' · <a href="#" id="live-refresh">refresh from Snowflake now</a> <span class="muted">(about 2 min)</span>';
+    // status block first, so the band has its final height before the page is fitted to the window
+    note.innerHTML = '<span class="st"><span class="k">Last complete day of sales</span><span class="v">' + mdy2(asOf) + '</span></span>'
+      + '<span class="st"><span class="k">' + label + '</span><span class="v">queried ' + fmt(q.queried_at) + '</span></span>'
+      + '<a href="#" id="live-refresh" class="btn">&#8635; Refresh from Snowflake <small>(about 2 min)</small></a>';
     document.getElementById('live-refresh').addEventListener('click', (e) => { e.preventDefault(); live(true); });
+    if (!booted) { window.sedBoot(); window.sedCalcs(); window.sedRender(); booted = true; }
+    else { window.dash.setParams({}); }
   }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function live(force) {
