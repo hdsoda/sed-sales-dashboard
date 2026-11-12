@@ -4,12 +4,22 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
+
+/** Rebuild a PKCS8 PEM from however the key was pasted: real newlines, literal "\n", one long line, or bare base64. */
+function normalizePem(raw) {
+  let s = String(raw).trim().replace(/\\n/g, '\n').replace(/^["']|["']$/g, '');
+  s = s.replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----/g, '').replace(/-----END [A-Z ]*PRIVATE KEY-----/g, '');
+  const b64 = s.replace(/[^A-Za-z0-9+/=]/g, '');
+  if (!b64) throw new Error('SNOWFLAKE_PRIVATE_KEY is empty');
+  return '-----BEGIN PRIVATE KEY-----\n' + b64.match(/.{1,64}/g).join('\n') + '\n-----END PRIVATE KEY-----\n';
+}
+
 function cfg() {
   const need = (k) => { const v = process.env[k]; if (!v) throw new Error(`Missing app setting ${k}`); return v; };
   return {
     account: need('SNOWFLAKE_ACCOUNT').toUpperCase(),
     user: need('SNOWFLAKE_USER').toUpperCase(),
-    key: need('SNOWFLAKE_PRIVATE_KEY').replace(/\\n/g, '\n'),
+    key: normalizePem(need('SNOWFLAKE_PRIVATE_KEY')),
     role: process.env.SNOWFLAKE_ROLE || 'SED_PBI_ANALYST',
     warehouse: process.env.SNOWFLAKE_WAREHOUSE || 'COMPUTE_WH',
     database: process.env.SNOWFLAKE_DATABASE || 'SED_DB',
