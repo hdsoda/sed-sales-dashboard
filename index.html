@@ -133,11 +133,6 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
       <button class="m-btn" data-metric="ce" aria-pressed="true">Volume<br>(CEs)</button>
       <button class="m-btn" data-metric="gp" aria-pressed="false">Gross<br>Profit</button>
     </div></div>
-    <div class="ctl"><div class="lbl">Warehouse</div><div class="seg" role="group" aria-label="Warehouse">
-      <button class="w-btn" data-wh="ALL" aria-pressed="true">All</button>
-      <button class="w-btn" data-wh="4" aria-pressed="false">Cypress (4)</button>
-      <button class="w-btn" data-wh="6" aria-pressed="false">Pasadena (6)</button>
-    </div></div>
     <div class="sdt" data-scope="ytd">
       <div class="sd sd-ytd"><div class="k">Selling Days<br>YTD</div><div class="v" data-source="windows" data-field="selling_days_ytd" data-row="0">—</div></div>
       <div class="sd sd-ytd"><div class="k">Selling Days<br>PY YTD</div><div class="v" data-source="windows" data-field="selling_days_py_ytd" data-row="0">—</div></div>
@@ -593,27 +588,40 @@ function dailyChart(box, rows) {
 
 /* share pie */
 function pieChart(box, rows) {
-  /* slices with outside labels and leader lines (name on one line, value (share) bold on the next), as in the report */
-  const w = Math.max(320, box.clientWidth), h = 330, cx = w / 2, cy = h / 2 + 4, R = Math.min(h / 2 - 48, w * 0.2), svg = svgIn(box, w, h);
+  /* report style: large slices carry their label inside (white), small ones are labelled outside on leader lines */
+  const PIE = { 'INDY C-STORE': '#118dff', 'CHAIN C-STORE': '#12239e', 'GROCERY': '#e66c37', 'LIQUOR': '#6b007b', 'DRUG': '#e044a7', 'OTHER': '#744ec2', 'ON-PREMISE': '#d9b300', 'NON-RETAIL': '#d64550' };
+  const w = Math.max(320, box.clientWidth), h = 340, cx = w / 2, cy = h / 2 + 6, R = Math.min(h / 2 - 34, w * 0.24), svg = svgIn(box, w, h);
   const r2 = sel(rows).filter((r) => r[F.ty()] > 0), total = d3.sum(r2, (r) => r[F.ty()]);
-  const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R);
+  const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R), inner = d3.arc().innerRadius(R * 0.55).outerRadius(R * 0.55);
+  const color = (d, i) => PIE[d.data.segment] || dash.colors[i % dash.colors.length];
   const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
-  g.selectAll('path').data(arcs).join('path').attr('d', arc).attr('fill', (d, i) => dash.colors[i % dash.colors.length]).attr('stroke', '#fff').attr('stroke-width', 1.5)
+  g.selectAll('path').data(arcs).join('path').attr('d', arc).attr('fill', color).attr('stroke', '#fff').attr('stroke-width', 1.5)
     .on('mousemove', (ev, d) => showTip(box, ev, `<div style="color:var(--cds-text-secondary)">${esc(d.data.segment)}</div><div>${fmtFull(d.data[F.ty()])} · ${d3.format('.1%')(d.data[F.ty()] / total)}</div>`)).on('mouseleave', () => hideTip(box));
-  const labR = R + 22, gap = 30;
-  const labs = arcs.map((d, i) => { const mid = (d.startAngle + d.endAngle) / 2, right = mid < Math.PI; const [ex, ey] = edge.centroid(d); return { d, i, right, ex, ey, kx: Math.cos(mid - Math.PI / 2) * labR, y: Math.sin(mid - Math.PI / 2) * labR }; });
+  const share = (d) => d3.format('.1%')(d.data[F.ty()] / total);
+  const big = arcs.filter((d) => d.endAngle - d.startAngle > 0.5), small = arcs.filter((d) => d.endAngle - d.startAngle <= 0.5);
+  // inside labels
+  const mid = (d) => d.endAngle - d.startAngle < 0.8;   // medium slices get a smaller inside label, further out
+  const inner2 = d3.arc().innerRadius(R * 0.68).outerRadius(R * 0.68);
+  const ti = g.selectAll('.pi').data(big).join('text').attr('transform', (d) => `translate(${(mid(d) ? inner2 : inner).centroid(d)})`).attr('text-anchor', 'middle').attr('fill', '#fff').attr('font-size', (d) => mid(d) ? 9 : 11);
+  ti.append('tspan').attr('x', 0).attr('dy', '-0.9em').text((d) => d.data.segment);
+  ti.append('tspan').attr('x', 0).attr('dy', '1.2em').attr('font-weight', 700).attr('font-size', (d) => mid(d) ? 12 : 14).text((d) => fmt(d.data[F.ty()]));
+  ti.append('tspan').attr('x', 0).attr('dy', '1.15em').attr('font-style', 'italic').attr('font-size', (d) => mid(d) ? 9 : 10).text((d) => `(${share(d)})`);
+  // outside labels for the small slices, spaced per side
+  const labR = R + 18, gap = 30;
+  const labs = small.map((d) => { const mid = (d.startAngle + d.endAngle) / 2, right = mid < Math.PI; const [ex, ey] = edge.centroid(d); return { d, right, ex, ey, kx: Math.cos(mid - Math.PI / 2) * labR, y: Math.sin(mid - Math.PI / 2) * labR }; });
   for (const side of [true, false]) {
     const L = labs.filter((l) => l.right === side).sort((a, b) => a.y - b.y);
     for (let i = 1; i < L.length; i++) if (L[i].y - L[i - 1].y < gap) L[i].y = L[i - 1].y + gap;
-    const maxY = cy - 16; for (let i = L.length - 1; i >= 0; i--) { if (L[i].y > maxY) L[i].y = maxY; if (i < L.length - 1 && L[i + 1].y - L[i].y < gap) L[i].y = L[i + 1].y - gap; }
+    const maxY = cy - 18; for (let i = L.length - 1; i >= 0; i--) { if (L[i].y > maxY) L[i].y = maxY; if (i < L.length - 1 && L[i + 1].y - L[i].y < gap) L[i].y = L[i + 1].y - gap; }
   }
-  const maxTxt = d3.max(labs, (l) => Math.max(textW(svg, l.d.data.segment, 11), textW(svg, `${fmt(l.d.data[F.ty()])} (${d3.format('.1%')(l.d.data[F.ty()] / total)})`, 11))) || 60;
-  const tx = (l) => (l.right ? 1 : -1) * Math.max(R + 30, Math.min(labR + 46, cx - maxTxt - 6));
+  const maxTxt = d3.max(labs, (l) => Math.max(textW(svg, l.d.data.segment, 11), textW(svg, fmt(l.d.data[F.ty()]) + ' (' + share(l.d) + ')', 12))) || 60;
+  const tx = (l) => (l.right ? 1 : -1) * Math.max(R + 26, Math.min(labR + 40, cx - maxTxt - 6));
   g.selectAll('polyline').data(labs).join('polyline').attr('fill', 'none').attr('stroke', '#8a8a8a').attr('stroke-width', 1)
     .attr('points', (l) => `${l.ex},${l.ey} ${l.kx},${l.y} ${tx(l) - (l.right ? 4 : -4)},${l.y}`);
-  const t = g.selectAll('.pl').data(labs).join('text').attr('x', tx).attr('y', (l) => l.y).attr('text-anchor', (l) => l.right ? 'start' : 'end').attr('font-size', 11).attr('fill', 'var(--color-fg)');
-  t.append('tspan').attr('x', tx).attr('dy', '-0.25em').attr('fill', 'var(--color-fg-muted)').text((l) => l.d.data.segment);
-  t.append('tspan').attr('x', tx).attr('dy', '1.15em').attr('font-weight', 700).text((l) => `${fmt(l.d.data[F.ty()])} (${d3.format('.1%')(l.d.data[F.ty()] / total)})`);
+  const to = g.selectAll('.po').data(labs).join('text').attr('x', tx).attr('y', (l) => l.y).attr('text-anchor', (l) => l.right ? 'start' : 'end').attr('font-size', 11).attr('fill', 'var(--color-fg)');
+  to.append('tspan').attr('x', tx).attr('dy', '-0.25em').text((l) => l.d.data.segment);
+  to.append('tspan').attr('x', tx).attr('dy', '1.15em').attr('font-weight', 700).attr('font-size', 12).text((l) => fmt(l.d.data[F.ty()]) + ' ');
+  to.append('tspan').attr('font-style', 'italic').attr('fill', 'var(--color-fg-muted)').text((l) => `(${share(l.d)})`);
 }
 
 /* table: this year, last year, change, trend; key cell carries the raw name */
