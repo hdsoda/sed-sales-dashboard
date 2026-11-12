@@ -60,7 +60,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .sdt .sd .v { color: var(--color-bad); font-size: 20px; font-weight: 700; line-height: 1.2; }
   .sed .page[hidden] { display: none; }
   .sed .page { margin-top: 12px; }
-  .sed .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
+  .sed .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); align-items: start; }
   .sed .grid.one { grid-template-columns: 1fr; }
   /* ---- cards: white body, gray header bar ---- */
   .sed .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 2px; padding: 0 10px 10px; min-width: 0; }
@@ -593,16 +593,27 @@ function dailyChart(box, rows) {
 
 /* share pie */
 function pieChart(box, rows) {
-  const w = Math.max(280, box.clientWidth), h = Math.min(250, w), R = h / 2 - 6, svg = svgIn(box, w, h);
+  /* slices with outside labels and leader lines (name on one line, value (share) bold on the next), as in the report */
+  const w = Math.max(320, box.clientWidth), h = 330, cx = w / 2, cy = h / 2 + 4, R = Math.min(h / 2 - 48, w * 0.2), svg = svgIn(box, w, h);
   const r2 = sel(rows).filter((r) => r[F.ty()] > 0), total = d3.sum(r2, (r) => r[F.ty()]);
-  const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), g = svg.append('g').attr('transform', `translate(${w - R - 8},${h / 2})`);
-  g.selectAll('path').data(arcs).join('path').attr('d', arc).attr('fill', (d, i) => dash.colors[i % dash.colors.length]).attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5)
+  const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R);
+  const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+  g.selectAll('path').data(arcs).join('path').attr('d', arc).attr('fill', (d, i) => dash.colors[i % dash.colors.length]).attr('stroke', '#fff').attr('stroke-width', 1.5)
     .on('mousemove', (ev, d) => showTip(box, ev, `<div style="color:var(--cds-text-secondary)">${esc(d.data.segment)}</div><div>${fmtFull(d.data[F.ty()])} · ${d3.format('.1%')(d.data[F.ty()] / total)}</div>`)).on('mouseleave', () => hideTip(box));
-  const lab = d3.arc().innerRadius(R * 0.6).outerRadius(R * 0.6);
-  g.selectAll('.pl').data(arcs.filter((d) => d.endAngle - d.startAngle > 0.42)).join('text').attr('transform', (d) => `translate(${lab.centroid(d)})`).attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', 'var(--color-fg)')
-    .selectAll('tspan').data((d) => [d.data.segment, fmt(d.data[F.ty()]) + ' (' + d3.format('.1%')(d.data[F.ty()] / total) + ')']).join('tspan').attr('x', 0).attr('dy', (s, i) => i ? 13 : -3).attr('font-weight', (s, i) => i ? 400 : 600).text((s) => s);
-  const leg = svg.append('g').attr('transform', `translate(4,${Math.max(6, h / 2 - arcs.length * 8)})`);
-  arcs.forEach((d, i) => { const row = leg.append('g').attr('transform', `translate(0,${i * 16})`); row.append('rect').attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', dash.colors[i % dash.colors.length]); row.append('text').attr('x', 15).attr('y', 9).attr('font-size', 11).attr('fill', 'var(--color-fg)').text(`${d.data.segment}  ${fmt(d.data[F.ty()])} (${d3.format('.1%')(d.data[F.ty()] / total)})`); });
+  const labR = R + 22, gap = 30;
+  const labs = arcs.map((d, i) => { const mid = (d.startAngle + d.endAngle) / 2, right = mid < Math.PI; const [ex, ey] = edge.centroid(d); return { d, i, right, ex, ey, kx: Math.cos(mid - Math.PI / 2) * labR, y: Math.sin(mid - Math.PI / 2) * labR }; });
+  for (const side of [true, false]) {
+    const L = labs.filter((l) => l.right === side).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < L.length; i++) if (L[i].y - L[i - 1].y < gap) L[i].y = L[i - 1].y + gap;
+    const maxY = cy - 16; for (let i = L.length - 1; i >= 0; i--) { if (L[i].y > maxY) L[i].y = maxY; if (i < L.length - 1 && L[i + 1].y - L[i].y < gap) L[i].y = L[i + 1].y - gap; }
+  }
+  const maxTxt = d3.max(labs, (l) => Math.max(textW(svg, l.d.data.segment, 11), textW(svg, `${fmt(l.d.data[F.ty()])} (${d3.format('.1%')(l.d.data[F.ty()] / total)})`, 11))) || 60;
+  const tx = (l) => (l.right ? 1 : -1) * Math.max(R + 30, Math.min(labR + 46, cx - maxTxt - 6));
+  g.selectAll('polyline').data(labs).join('polyline').attr('fill', 'none').attr('stroke', '#8a8a8a').attr('stroke-width', 1)
+    .attr('points', (l) => `${l.ex},${l.ey} ${l.kx},${l.y} ${tx(l) - (l.right ? 4 : -4)},${l.y}`);
+  const t = g.selectAll('.pl').data(labs).join('text').attr('x', tx).attr('y', (l) => l.y).attr('text-anchor', (l) => l.right ? 'start' : 'end').attr('font-size', 11).attr('fill', 'var(--color-fg)');
+  t.append('tspan').attr('x', tx).attr('dy', '-0.25em').attr('fill', 'var(--color-fg-muted)').text((l) => l.d.data.segment);
+  t.append('tspan').attr('x', tx).attr('dy', '1.15em').attr('font-weight', 700).text((l) => `${fmt(l.d.data[F.ty()])} (${d3.format('.1%')(l.d.data[F.ty()] / total)})`);
 }
 
 /* table: this year, last year, change, trend; key cell carries the raw name */
