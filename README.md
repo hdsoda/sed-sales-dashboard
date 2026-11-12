@@ -3,7 +3,7 @@
 A live version of the SED sales dashboard. The page (`index.html`) is served by **Azure Static Web Apps**;
 on every open it calls `/api/data`, an **Azure Function** (`api/`) that queries the `SED_DB.PUBLIC` views in
 Snowflake over key-pair auth and returns the nine datasets the page renders. GitHub Actions deploys the
-site on every push to `main`. The site is open to anyone with the link (sign-in can be switched on; see step 4).
+site on every push to `main`. Sign-in is required (Microsoft account) and only invited users get in.
 
 ```
 Browser ──> Static Web App (index.html)
@@ -25,8 +25,17 @@ DESC USER HSOWDA;  -- RSA_PUBLIC_KEY_FP must equal the fingerprint you were give
 ```
 The matching private key goes into Azure in step 3 and nowhere else.
 
-### 2. GitHub — push this repo
-Create an empty repo (for example `sed-sales-dashboard`) and push these files to `main`.
+### 2. GitHub — push this repo and add the secrets
+Push these files to `main`. Then **Settings → Secrets and variables → Actions → New repository secret**, three times:
+
+| Secret | Value |
+|---|---|
+| `SNOWFLAKE_ACCOUNT` | `TFVRURQ-BKB02018` |
+| `SNOWFLAKE_USER` | `HUNTER.SOWDA@SILVEREAGLE.COM` (the LOGIN_NAME, not `HSOWDA`) |
+| `SNOWFLAKE_PRIVATE_KEY` | contents of `rsa_key.p8`, including the BEGIN/END lines |
+
+Azure adds a fourth secret (`AZURE_STATIC_WEB_APPS_API_TOKEN_…`) itself in step 3. Then **Actions → Refresh dashboard
+data from Snowflake → Run workflow** to build the first `data.json` (about 2 minutes).
 Do **not** commit `rsa_key.p8` or `api/local.settings.json` (both are in `.gitignore`).
 
 ### 3. Azure — create the Static Web App
@@ -41,7 +50,7 @@ Then in the Static Web App → **Settings → Environment variables** (or *Confi
 | Name | Value |
 |---|---|
 | `SNOWFLAKE_ACCOUNT` | `TFVRURQ-BKB02018` |
-| `SNOWFLAKE_USER` | `HSOWDA` |
+| `SNOWFLAKE_USER` | `HUNTER.SOWDA@SILVEREAGLE.COM` (the LOGIN_NAME) |
 | `SNOWFLAKE_PRIVATE_KEY` | contents of `rsa_key.p8`, including the BEGIN/END lines (paste as-is; newlines are fine) |
 | `SNOWFLAKE_ROLE` | `SED_PBI_ANALYST` |
 | `SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH` |
@@ -49,20 +58,23 @@ Then in the Static Web App → **Settings → Environment variables** (or *Confi
 | `SNOWFLAKE_SCHEMA` | `PUBLIC` |
 | `CACHE_SECONDS` | `3600` |
 
-Save. Open `https://<your-app>.azurestaticapps.net/api/data` — the first call takes 10–30 s (Snowflake
-scans the two sales views on an X-Small warehouse), later calls are instant for an hour.
+Save. `https://<your-app>.azurestaticapps.net/api/data` answers `{"status":"pending"}` while Snowflake runs and the
+payload once it's done (~90 s); the page handles that polling itself.
 
 ### 4. Who can see it
-The site is open: anyone with the URL can view it (no sign-in). To restrict it to invited people instead,
-change both `allowedRoles` entries in `staticwebapp.config.json` to `["sed"]`, add
-`"responseOverrides": { "401": { "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer", "statusCode": 302 } }`,
-and invite viewers under the Static Web App's **Role management** with role `sed`.
+`staticwebapp.config.json` requires the custom role **`sed`** on every route. To let someone in:
+Static Web App → **Role management** → **Invite** → their email, role `sed`, expiry up to 7 days → send
+them the invitation link. Up to 25 invitations on the Free plan. Nobody else — including signed-in
+Microsoft users who weren't invited — sees anything but `no-access.html`.
+
+To make it open to anyone with the link instead, change both `allowedRoles` entries to `["anonymous"]`.
 
 ## Day to day
-- The page shows when the data was queried and offers **refresh now** (`?refresh=1`) to bypass the cache.
+- The page shows which build it's on (daily or live) and when it was queried; **refresh from Snowflake now** pulls live.
+- The morning job runs Mon–Sat; run it by hand any time from the repo's **Actions** tab (**Run workflow**).
 - Every push to `main` redeploys in a couple of minutes; the function and page deploy together.
-- Snowflake loads invoices once a night, so an hour of caching costs nothing in freshness.
-- Cost: Static Web App Free plan = $0; Snowflake = two short queries per cache miss on `COMPUTE_WH`.
+- Cost: Static Web App Free plan = $0; GitHub Actions ≈ 3 min/day (free tier is 2,000 min/month);
+  Snowflake = one ~90 s query per build on `COMPUTE_WH` (X-Small).
 
 ## Local run (optional)
 ```
@@ -75,10 +87,14 @@ Or `npm i -g @azure/static-web-apps-cli && swa start . --api-location api` to ru
 ## Files
 ```
 index.html                  the dashboard (D3); fetches /api/data, then renders
-staticwebapp.config.json    routes (open to anonymous), API runtime
-api/data/index.js           GET /api/data — runs the two queries, builds datasets, caches 1 h
-api/lib/snowflake.js        SQL REST API client with key-pair JWT (no SDK)
-api/lib/sql.js              the model's rules as SQL (same CTE as the Streamlit port)
-api/lib/build.js            datasets from the result sets (windows, YTD/MTD, daily, dims)
+no-access.html              shown to signed-in users who weren't invited
+staticwebapp.config.json    auth routes (Microsoft sign-in, role "sed"), API runtime
+data.json                   the daily build (written by the refresh workflow; the page loads it first)
+api/data/index.js           GET /api/data — submits the query async, 202 while running, 200 with the payload
+api/lib/snowflake.js        SQL REST API client with key-pair JWT (no SDK): runSql, submit, check
+api/lib/sql.js              the model's rules as one SQL statement (grouping sets; windows computed in SQL)
+api/lib/build.js            datasets from the result rows (windows, YTD/MTD, daily, dims)
 api/test-connection.js      smoke test
+scripts/build-data.js       what the refresh workflow runs: query → data.json
+.github/workflows/refresh-data.yml   the 6:15 AM job (and Run workflow button)
 ```

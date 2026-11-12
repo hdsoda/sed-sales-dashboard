@@ -40,25 +40,19 @@ async function call(c, token, path, opts = {}) {
   return { status: r.status, body };
 }
 
-/** Run one statement; returns {columns:[...], rows:[[...]]} with every partition collected. */
-async function runSql(statement, { timeout = 170 } = {}) {
-  const c = cfg(); const token = makeJwt(c);
-  let { status, body } = await call(c, token, '/api/v2/statements', {
-    method: 'POST',
-    body: JSON.stringify({ statement, timeout, role: c.role, warehouse: c.warehouse, database: c.database, schema: c.schema,
-                           parameters: { TIMEZONE: 'America/Chicago', DATE_OUTPUT_FORMAT: 'YYYY-MM-DD' } }),
-  });
-  const handle = body.statementHandle;
-  let waited = 0;
-  while (status === 202 || (body.code && body.code === '333334')) {       // still running
-    await sleep(1500); waited += 1.5;
-    if (waited > timeout) throw new Error('Snowflake query timed out');
-    ({ status, body } = await call(c, token, `/api/v2/statements/${handle}`));
-  }
-  if (!body.resultSetMetaData) throw new Error(`Unexpected Snowflake response: ${JSON.stringify(body).slice(0, 300)}`);
+function statementBody(c, statement, timeout) {
+  return JSON.stringify({ statement, timeout, role: c.role, warehouse: c.warehouse, database: c.database, schema: c.schema,
+                          parameters: { TIMEZONE: 'America/Chicago', DATE_OUTPUT_FORMAT: 'YYYY-MM-DD' } });
+}
+
+function collect(body) {
   const columns = body.resultSetMetaData.rowType.map((t) => t.name);
-  const rows = [...(body.data || [])];
-  const parts = body.resultSetMetaData.partitionInfo || [];
+  return { columns, parts: body.resultSetMetaData.partitionInfo || [], first: body.data || [] };
+}
+
+async function allRows(c, token, handle, body) {
+  const { columns, parts, first } = collect(body);
+  const rows = [...first];
   for (let p = 1; p < parts.length; p++) {
     const more = await call(c, token, `/api/v2/statements/${handle}?partition=${p}`);
     rows.push(...(more.body.data || []));
@@ -66,4 +60,36 @@ async function runSql(statement, { timeout = 170 } = {}) {
   return { columns, rows: rows.map((r) => Object.fromEntries(r.map((v, i) => [columns[i], v]))) };
 }
 
-module.exports = { runSql, cfg };
+/** Submit a statement without waiting; returns the statement handle. Snowflake runs it to completion on its own. */
+async function submit(statement, { timeout = 600 } = {}) {
+  const c = cfg(); const token = makeJwt(c);
+  const { body } = await call(c, token, '/api/v2/statements?async=true', { method: 'POST', body: statementBody(c, statement, timeout) });
+  if (!body.statementHandle) throw new Error(`Snowflake did not return a statement handle: ${JSON.stringify(body).slice(0, 300)}`);
+  return body.statementHandle;
+}
+
+/** Check a submitted statement: {done:false} while running, {done:true, columns, rows} when finished. Throws if it failed. */
+async function check(handle) {
+  const c = cfg(); const token = makeJwt(c);
+  const { status, body } = await call(c, token, `/api/v2/statements/${handle}`);
+  if (status === 202 || body.code === '333334') return { done: false, message: body.message };
+  if (!body.resultSetMetaData) throw new Error(`Snowflake statement ${handle} failed: ${body.message || JSON.stringify(body).slice(0, 300)}`);
+  return { done: true, ...(await allRows(c, token, handle, body)) };
+}
+
+/** Run one statement and wait for it (polls); returns {columns, rows} with every partition collected. */
+async function runSql(statement, { timeout = 600 } = {}) {
+  const c = cfg(); const token = makeJwt(c);
+  let { status, body } = await call(c, token, '/api/v2/statements', { method: 'POST', body: statementBody(c, statement, Math.min(timeout, 170)) });
+  const handle = body.statementHandle;
+  let waited = 0;
+  while (status === 202 || body.code === '333334') {
+    await sleep(2000); waited += 2;
+    if (waited > timeout) throw new Error('Snowflake query timed out');
+    ({ status, body } = await call(c, token, `/api/v2/statements/${handle}`));
+  }
+  if (!body.resultSetMetaData) throw new Error(`Unexpected Snowflake response: ${JSON.stringify(body).slice(0, 300)}`);
+  return allRows(c, token, handle, body);
+}
+
+module.exports = { runSql, submit, check, cfg };

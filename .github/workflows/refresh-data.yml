@@ -1,0 +1,49 @@
+name: Refresh dashboard data from Snowflake
+
+on:
+  schedule:
+    - cron: '15 12 * * 1-6'     # 6:15 AM Central Standard Time (winter), Mon–Sat
+    - cron: '15 11 * * 1-6'     # 6:15 AM Central Daylight Time (summer) — the other one runs an hour off; harmless
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: refresh-data
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install API dependencies
+        run: npm ci --prefix api
+      - name: Query Snowflake and write data.json
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_ROLE: SED_PBI_ANALYST
+          SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+          SNOWFLAKE_DATABASE: SED_DB
+          SNOWFLAKE_SCHEMA: PUBLIC
+        run: node scripts/build-data.js
+      - name: Commit data.json
+        run: |
+          git config user.name "sed-dashboard-bot"
+          git config user.email "sed-dashboard-bot@users.noreply.github.com"
+          git add data.json
+          git diff --cached --quiet && echo "no change" || git commit -m "data: refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_GROUND_074717B10 }}
+          action: "upload"
+          app_location: "/"
+          api_location: "api"
+          output_location: ""
+          skip_app_build: true

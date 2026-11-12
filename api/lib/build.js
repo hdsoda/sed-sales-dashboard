@@ -124,4 +124,12 @@ function buildFromDims(dims) {
   return { ytd_supplier, ytd_brand_family, ytd_segment, ytd_chain };
 }
 
-module.exports = { windowsFrom, buildFromDaily, buildFromDims, supplierShort, chainShort };
+/** Full payload from the single-statement result rows. */
+function buildPayload(rows, today, meta = {}) {
+  const { splitRows } = require('./sql');
+  const { daily, dims } = splitRows(rows);
+  const W = windowsFrom(daily, today);
+  return { meta: { queried_at: new Date().toISOString(), today, ...meta }, windows: [W], ...buildFromDaily(daily, W), ...buildFromDims(dims) };
+}
+
+module.exports = { windowsFrom, buildFromDaily, buildFromDims, buildPayload, supplierShort, chainShort };
