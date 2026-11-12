@@ -235,12 +235,11 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   note.textContent = 'Loading live data from Snowflake…';
   try {
     const r = await fetch('/api/data' + (location.search.includes('refresh=1') ? '?refresh=1' : ''), { credentials: 'same-origin' });
-    if (r.status === 401 || r.status === 403) { location.href = '/login'; return; }
     if (!r.ok) { let m = 'HTTP ' + r.status; try { m = (await r.json()).error || m; } catch (e) {} throw new Error(m); }
     window.__SED_DATA = await r.json();
     window.sedBoot(); window.sedCalcs(); window.sedRender();
     const q = window.__SED_DATA.meta || {};
-    note.innerHTML = 'Live from Snowflake · queried ' + fmt(q.queried_at) + ' (' + Math.round((q.query_ms || 0) / 1000) + 's, cached up to ' + Math.round((q.cache_seconds || 3600) / 60) + ' min) · <a href="?refresh=1">refresh now</a> · <a href="/logout">sign out</a>';
+    note.innerHTML = 'Live from Snowflake · queried ' + fmt(q.queried_at) + ' (' + Math.round((q.query_ms || 0) / 1000) + 's, cached up to ' + Math.round((q.cache_seconds || 3600) / 60) + ' min) · <a href="?refresh=1">refresh now</a>';
   } catch (e) {
     note.textContent = 'Could not load data: ' + e.message;
     console.error(e);

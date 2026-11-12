@@ -3,7 +3,7 @@
 A live version of the SED sales dashboard. The page (`index.html`) is served by **Azure Static Web Apps**;
 on every open it calls `/api/data`, an **Azure Function** (`api/`) that queries the `SED_DB.PUBLIC` views in
 Snowflake over key-pair auth and returns the nine datasets the page renders. GitHub Actions deploys the
-site on every push to `main`. Sign-in is required (Microsoft account) and only invited users get in.
+site on every push to `main`. The site is open to anyone with the link (sign-in can be switched on; see step 4).
 
 ```
 Browser ──> Static Web App (index.html)
@@ -53,12 +53,10 @@ Save. Open `https://<your-app>.azurestaticapps.net/api/data` — the first call 
 scans the two sales views on an X-Small warehouse), later calls are instant for an hour.
 
 ### 4. Who can see it
-`staticwebapp.config.json` requires the custom role **`sed`** on every route. To let someone in:
-Static Web App → **Role management** → **Invite** → their email, role `sed`, expiry up to 7 days → send
-them the invitation link. Up to 25 invitations on the Free plan. Nobody else — including signed-in
-Microsoft users who weren't invited — sees anything but `no-access.html`.
-
-To make it open to anyone with the link instead, change both `allowedRoles` entries to `["anonymous"]`.
+The site is open: anyone with the URL can view it (no sign-in). To restrict it to invited people instead,
+change both `allowedRoles` entries in `staticwebapp.config.json` to `["sed"]`, add
+`"responseOverrides": { "401": { "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer", "statusCode": 302 } }`,
+and invite viewers under the Static Web App's **Role management** with role `sed`.
 
 ## Day to day
 - The page shows when the data was queried and offers **refresh now** (`?refresh=1`) to bypass the cache.
@@ -77,8 +75,7 @@ Or `npm i -g @azure/static-web-apps-cli && swa start . --api-location api` to ru
 ## Files
 ```
 index.html                  the dashboard (D3); fetches /api/data, then renders
-no-access.html              shown to signed-in users who weren't invited
-staticwebapp.config.json    auth routes (Microsoft sign-in, role "sed"), API runtime
+staticwebapp.config.json    routes (open to anonymous), API runtime
 api/data/index.js           GET /api/data — runs the two queries, builds datasets, caches 1 h
 api/lib/snowflake.js        SQL REST API client with key-pair JWT (no SDK)
 api/lib/sql.js              the model's rules as SQL (same CTE as the Streamlit port)
