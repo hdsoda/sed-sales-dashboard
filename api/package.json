@@ -1,0 +1,9 @@
+{
+  "name": "sed-dashboard-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Azure Function that serves live SED sales datasets from Snowflake (key-pair JWT, SQL REST API).",
+  "main": "data/index.js",
+  "engines": { "node": ">=18" },
+  "dependencies": { "jsonwebtoken": "^9.0.2" }
+}

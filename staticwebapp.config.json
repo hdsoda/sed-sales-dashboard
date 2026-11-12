@@ -1,0 +1,16 @@
+{
+  "routes": [
+    { "route": "/.auth/login/github", "statusCode": 404 },
+    { "route": "/.auth/login/twitter", "statusCode": 404 },
+    { "route": "/login", "redirect": "/.auth/login/aad?post_login_redirect_uri=/", "statusCode": 302 },
+    { "route": "/logout", "redirect": "/.auth/logout", "statusCode": 302 },
+    { "route": "/api/*", "allowedRoles": ["sed"] },
+    { "route": "/*", "allowedRoles": ["sed"] }
+  ],
+  "responseOverrides": {
+    "401": { "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer", "statusCode": 302 },
+    "403": { "rewrite": "/no-access.html", "statusCode": 403 }
+  },
+  "navigationFallback": { "rewrite": "/index.html", "exclude": ["/api/*", "/*.{css,js,png,svg,ico}"] },
+  "platform": { "apiRuntime": "node:18" }
+}
