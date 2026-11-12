@@ -112,6 +112,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   [data-dash-source-state=empty] { color: transparent; }
   [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
   .sed .foot { color: var(--color-fg-muted); font-size: 11px; margin-top: var(--cds-gap-lg); }
+  .sed .foot[hidden] { display: none; }
   /* room for the zoom pill on the page's top header bar */
   .sed .tiles .strip-head { padding-right: 122px; }
   .sed .page > .grid > *:last-child > .card:first-child > h2, .sed .page > .grid > .card:last-child > h2 { padding-right: 122px; }
@@ -727,6 +728,7 @@ dash.onData(() => {
   $$('.w-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.wh === state.wh));
   $$('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.page === state.page));
   $$('.page').forEach((s) => { s.hidden = s.id !== state.page; });
+  { const f = $('.foot'); if (f) f.hidden = state.page !== 'ytd-pqd'; } // the method note shows on the first page only
   $$('.mname').forEach((e) => e.textContent = mname()); $$('.mshort').forEach((e) => e.textContent = mname());
   $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}`);
   $$('.ttl-mtd').forEach((e) => e.textContent = `MTD ${mname()}`);
