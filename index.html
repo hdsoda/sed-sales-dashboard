@@ -147,10 +147,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 
 <!-- ===== YTD by PQD ===== -->
 <section class="page" id="ytd-pqd">
-  <div class="tiles three"><div class="strip-head"><span>YTD summary — <span class="mname">volume (CEs)</span></span><span class="rng"><span class="ytdwin2">—</span> vs <span class="pywin2">—</span></span></div>
-    <div class="card tile"><div class="k">Current YTD</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-ty">—</div><div class="d ytdwin2">—</div></div>
-    <div class="card tile"><div class="k">Last year, same days</div><div class="v" data-source="tot" data-field="ce_ly" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-ly">—</div><div class="d pywin2">—</div></div>
-    <div class="card tile"><div class="k">Change <span class="eq">(current − last)</span></div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-chg">—</div><div class="d" data-source="tot" data-field="ce_pct" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-pct">—</div></div>
+  <div class="tiles three"><div class="strip-head"><span>YTD summary — <span class="mname">volume (CEs)</span></span><span class="rng ytdwin2">—</span></div>
+    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-ty">—</div></div>
+    <div class="card tile"><div class="k">Change</div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-chg">—</div></div>
+    <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=YTD&amp;wh=ALL" data-plain="1" id="t-ytd-pct">—</div></div>
   </div>
   <div class="grid" style="grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);">
     <div class="card"><h2 class="ttl-ytd">YTD volume (CEs) by PQD</h2><p class="note subwin">—</p>
@@ -655,7 +655,7 @@ dash.onData(() => {
     const scope = e.dataset.where.startsWith('scope=YTD') ? 'YTD' : 'MTD'; e.dataset.where = `scope=${scope}&wh=${state.wh}`;
     const r = tot && tot.find((r) => r.scope === scope && r.wh === state.wh);
     const v = r ? r[e.dataset.field] : null;
-    e.textContent = !r ? '—' : base === 'pct' ? pct(v) + ' vs last year' : base === 'chg' ? fmtS(v) : fmt(v);
+    e.textContent = !r ? '—' : base === 'pct' ? pct(v) + (e.dataset.plain ? '' : ' vs last year') : base === 'chg' ? fmtS(v) : fmt(v);
     if (base === 'chg' || base === 'pct') e.classList.toggle('down', v != null && v < 0), e.classList.toggle('up', v != null && v >= 0);
   });
   // charts per page
