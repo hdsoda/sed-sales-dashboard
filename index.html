@@ -73,7 +73,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .tiles.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .sed .tiles .strip-head { grid-column: 1 / -1; background: var(--panel-head); margin: 0 -10px; padding: 7px 10px 6px; font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
   .sed .tiles .strip-head .rng { font-weight: 400; font-size: 11px; color: var(--color-fg-muted); }
-  @media (max-width: 760px) { .sed .tiles.three, .sed .tiles.four { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .sed .tiles.three, .sed .tiles.four { grid-template-columns: 1fr 1fr; } }
   .sed .tile { background: #f3f3f3; border: 0; border-radius: 2px; padding: 6px 10px 7px; text-align: center; }
   .sed .tile .k { color: #7a7a7a; font-size: 11px; font-weight: 400; line-height: 1.25; }
   .sed .tile .k .eq { color: #9a9a9a; font-weight: 400; font-size: 10px; }
@@ -163,11 +163,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 
 <!-- ===== MTD by Day ===== -->
 <section class="page" id="mtd-day" hidden>
-  <div class="tiles four"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng"><span class="mtdwin2">—</span> vs <span class="pymtdwin2">—</span></span></div>
-    <div class="card tile"><div class="k">Today <span class="eq">(last complete day)</span></div><div class="v" id="t-today-ty">—</div><div class="d" id="t-today-d">—</div></div>
-    <div class="card tile"><div class="k">Last year, same weekday</div><div class="v" id="t-today-ly">—</div><div class="d" id="t-today-ld">—</div></div>
-    <div class="card tile hero"><div class="k">MTD <span class="eq">(month to date)</span></div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d"><span class="mtdwin2">—</span> · last year, same days <b data-source="tot" data-field="ce_ly" data-where="scope=MTD&amp;wh=ALL">—</b> · <span data-source="windows" data-field="selling_days_mtd" data-row="0">—</span> vs <span data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</span> selling days</div></div>
-    <div class="card tile"><div class="k">MTD change <span class="eq">(current − last)</span></div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+  <div class="tiles three"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng mtdwin2">—</span></div>
+    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+    <div class="card tile"><div class="k">Change</div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+    <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
   <div class="grid one">
     <div class="card"><h2 class="ttl-daily">Daily volume (CEs) — this year vs last year</h2><p class="note mtdnote">—</p>
