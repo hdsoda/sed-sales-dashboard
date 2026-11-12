@@ -54,6 +54,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .seg button { background: #fff; color: #777; border: 0; padding: 5px 10px; font: inherit; font-size: 11px; line-height: 1.2; cursor: pointer; }
   .sed .seg button[aria-pressed="true"] { background: #2b2b2b; color: #fff; font-weight: 700; }
   .sed .sdt { display: flex; gap: 6px; }
+  .sed .sdt[data-scope="ytd"] .sd-mtd, .sed .sdt[data-scope="mtd"] .sd-ytd { display: none; }
   .sed .sdt .sd { background: #fff; border: 1px solid #c9ccd8; min-width: 78px; text-align: center; padding: 4px 8px; }
   .sed .sdt .sd .k { color: var(--color-bad); font-size: 10px; line-height: 1.2; }
   .sed .sdt .sd .v { color: var(--color-bad); font-size: 20px; font-weight: 700; line-height: 1.2; }
@@ -134,9 +135,11 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
       <button class="w-btn" data-wh="4" aria-pressed="false">Cypress (4)</button>
       <button class="w-btn" data-wh="6" aria-pressed="false">Pasadena (6)</button>
     </div></div>
-    <div class="sdt">
-      <div class="sd"><div class="k">Selling Days<br>YTD</div><div class="v" data-source="windows" data-field="selling_days_ytd" data-row="0">—</div></div>
-      <div class="sd"><div class="k">Selling Days<br>PY YTD</div><div class="v" data-source="windows" data-field="selling_days_py_ytd" data-row="0">—</div></div>
+    <div class="sdt" data-scope="ytd">
+      <div class="sd sd-ytd"><div class="k">Selling Days<br>YTD</div><div class="v" data-source="windows" data-field="selling_days_ytd" data-row="0">—</div></div>
+      <div class="sd sd-ytd"><div class="k">Selling Days<br>PY YTD</div><div class="v" data-source="windows" data-field="selling_days_py_ytd" data-row="0">—</div></div>
+      <div class="sd sd-mtd"><div class="k">Selling Days<br>MTD</div><div class="v" data-source="windows" data-field="selling_days_mtd" data-row="0">—</div></div>
+      <div class="sd sd-mtd"><div class="k">Selling Days<br>PY MTD</div><div class="v" data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</div></div>
     </div>
   </div>
 </div>
@@ -168,7 +171,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   </div>
   <div class="grid one">
     <div class="card"><h2 class="ttl-daily">Daily volume (CEs) — this year vs last year</h2><p class="note mtdnote">—</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year (line)</span><span><i class="sw-ly"></i>Last year, same weekday, 364 days back (bars)</span></div>
+      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year (same weekday)</span></div>
       <div class="chart rel" id="c-daily" data-source="daily"></div></div>
   </div>
 </section>
@@ -453,7 +456,7 @@ const state = { metric: 'ce', wh: 'ALL', page: 'ytd-pqd' };
 const TY = dash.colors[0], LY = 'var(--cds-chart-muted)', UP = 'var(--color-ok)', DOWN = 'var(--color-bad)';
 const isGP = () => state.metric === 'gp';
 const F = { ty: () => state.metric + '_ty', ly: () => state.metric + '_ly', chg: () => state.metric + '_chg', pct: () => state.metric + '_pct' };
-const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+const compact = { format: (v) => { const a = Math.abs(v); if (a >= 1e6) return (Math.sign(v) * Math.round(a / 1e5) / 10).toLocaleString('en', { maximumFractionDigits: 1 }) + 'M'; if (a >= 1e5) return Math.round(v / 1e3).toLocaleString('en') + 'K'; if (a >= 1e3) return (Math.sign(v) * Math.round(a / 100) / 10).toLocaleString('en', { maximumFractionDigits: 1 }) + 'K'; return Math.round(v).toLocaleString('en'); } };
 const fmt = (v) => v == null || isNaN(v) ? '—' : (isGP() ? '$' : '') + compact.format(v);
 const fmtS = (v) => v == null || isNaN(v) ? '—' : (v < 0 ? '−' : '+') + (isGP() ? '$' : '') + compact.format(Math.abs(v));
 const fmtFull = (v) => v == null || isNaN(v) ? '—' : (isGP() ? '$' : '') + d3.format(',.0f')(v);
@@ -564,19 +567,21 @@ function trendPanels(box, trend, byPqd, asOf) {
 
 /* daily: LY bars (same weekday 364 back), TY line with value labels */
 function dailyChart(box, rows) {
-  const w = Math.max(360, box.clientWidth), h = 360, m = { t: 24, r: 16, b: 28, l: 8 }, svg = svgIn(box, w, h);
+  const w = Math.max(360, box.clientWidth), h = 360, m = { t: 24, r: 16, b: 40, l: 8 }, svg = svgIn(box, w, h);
   const r2 = sel(rows);
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; const dayInfo = new Map(r2.map((r) => { const d = new Date(r.date_ty + 'T00:00:00'); return [r.day, { wd: WD[d.getDay()], md: (d.getMonth() + 1) + '/' + d.getDate(), wk: d.getDay() === 0 || d.getDay() === 6 }]; }));
   const yMax = d3.max(r2, (r) => Math.max(r[F.ty()] || 0, r[F.ly()] || 0)) || 1;
   const left = m.l + textW(svg, fmt(yMax), 11) + 8;
   const x = d3.scaleBand(r2.map((r) => r.day), [left, w - m.r]).paddingInner(0.4);
   const y = d3.scaleLinear([0, yMax * 1.12], [h - m.b, m.t]);
   svg.append('g').attr('class', 'gridl').selectAll('line').data(y.ticks(5)).join('line').attr('x1', left).attr('x2', w - m.r).attr('y1', (d) => y(d)).attr('y2', (d) => y(d));
   svg.append('g').attr('class', 'axis tick').attr('transform', `translate(${left},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(fmt).tickSize(0)).attr('font-size', null).attr('font-family', null).select('.domain').remove();
-  svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).tickSize(0).tickFormat((d) => d)).attr('font-size', null).attr('font-family', null).select('.domain').remove();
+  const xa = svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).tickSize(0).tickFormat((d) => (dayInfo.get(d) || {}).wd || d)).attr('font-size', null).attr('font-family', null); xa.select('.domain').remove(); xa.selectAll('text').attr('font-weight', (d) => dayInfo.get(d).wk ? 400 : 700).attr('opacity', (d) => dayInfo.get(d).wk ? .55 : 1);
+  svg.selectAll('.xd').data(r2).join('text').attr('class', 'lab muted').attr('x', (r) => x(r.day) + x.bandwidth() / 2).attr('y', h - m.b + 26).attr('text-anchor', 'middle').attr('font-size', 10).attr('opacity', (r) => dayInfo.get(r.day).wk ? .55 : 1).text((r) => dayInfo.get(r.day).md);
   svg.selectAll('.lb').data(r2).join('rect').attr('x', (r) => x(r.day)).attr('y', (r) => y(r[F.ly()])).attr('width', x.bandwidth()).attr('height', (r) => y(0) - y(r[F.ly()])).attr('rx', 2).attr('fill', LY);
-  const tyRows = r2.filter((r) => r[F.ty()] != null);
-  const line = d3.line().x((r) => x(r.day) + x.bandwidth() / 2).y((r) => y(r[F.ty()]));
-  svg.append('path').datum(tyRows).attr('d', line).attr('fill', 'none').attr('stroke', TY).attr('stroke-width', 2.5).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+  const tyRows = r2.filter((r) => r[F.ty()] != null && r[F.ty()] !== 0);
+  const line = d3.line().defined((r) => r[F.ty()] != null && r[F.ty()] !== 0).x((r) => x(r.day) + x.bandwidth() / 2).y((r) => y(r[F.ty()]));
+  svg.append('path').datum(r2.filter((r) => r[F.ty()] != null)).attr('d', line).attr('fill', 'none').attr('stroke', TY).attr('stroke-width', 2.5).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
   svg.selectAll('.pt').data(tyRows).join('circle').attr('cx', (r) => x(r.day) + x.bandwidth() / 2).attr('cy', (r) => y(r[F.ty()])).attr('r', 3).attr('fill', TY);
   if (x.bandwidth() > 22) svg.selectAll('.vl').data(tyRows).join('text').attr('class', 'lab').attr('x', (r) => x(r.day) + x.bandwidth() / 2).attr('y', (r) => y(r[F.ty()]) - 8).attr('text-anchor', 'middle').attr('font-size', 10).text((r) => fmt(r[F.ty()]));
   svg.append('rect').attr('x', left).attr('y', m.t).attr('width', w - m.r - left).attr('height', h - m.b - m.t).attr('fill', 'transparent').on('mousemove', (ev) => { const mx = d3.pointer(ev)[0]; const i = Math.max(0, Math.min(r2.length - 1, Math.floor((mx - left) / x.step()))); const r = r2[i]; showTip(box, ev, `<div style="color:var(--cds-text-secondary)">Day ${r.day}</div><div><span style="display:inline-block;width:9px;height:9px;background:${TY};margin-right:4px"></span>${mdy(r.date_ty)}: ${r[F.ty()] == null ? 'not yet' : fmtFull(r[F.ty()])}</div><div><span style="display:inline-block;width:9px;height:9px;background:${LY};margin-right:4px"></span>${mdy(r.date_ly)}: ${fmtFull(r[F.ly()])}</div>`); }).on('mouseleave', () => hideTip(box));
@@ -612,7 +617,7 @@ const $ = (s, root) => (root || document).querySelector(s), $$ = (s, root) => [.
 $$('.m-btn').forEach((b) => b.addEventListener('click', () => { state.metric = b.dataset.metric; dash.setParams({ metric: state.metric }); }));
 $$('.w-btn').forEach((b) => b.addEventListener('click', () => { state.wh = b.dataset.wh; dash.setParams({ wh: state.wh }); }));
 const PAGE_TITLES = { 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD Sales by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
-$$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; $('#title').textContent = PAGE_TITLES[state.page] || b.textContent; dash.setLink(state.page); dash.setParams({ page: state.page }); }));
+$$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; $('#title').textContent = PAGE_TITLES[state.page] || b.textContent; $('.sdt').dataset.scope = state.page.startsWith('mtd') ? 'mtd' : 'ytd'; dash.setLink(state.page); dash.setParams({ page: state.page }); }));
 { const named = location.hash.slice(1); if (named && document.getElementById(named)) state.page = named; }
 
 /* ---------- draw everything ---------- */
