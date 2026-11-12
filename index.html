@@ -8,103 +8,106 @@
 :root {
   --font-anthropic-sans: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
   --font-anthropic-serif: Georgia, "Times New Roman", serif;
-  --color-fg: #1f2328; --color-fg-muted: #656d76; --color-bg: #f6f7f9; --color-panel: #ffffff; --color-border-line: #d9dde3;
+  --color-fg: #252525; --color-fg-muted: #6b6b6b; --color-bg: #d9dbea; --color-panel: #ffffff; --color-border-line: #c9ccd8;
   --color-ok: #1a7f37; --color-bad: #c0392b;
-  --cds-radius: 8px; --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 16px; --cds-pad-xl: 24px;
-  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-lg: 24px; --cds-gap-xl: 32px;
-  --cds-font-size-caption: 12px; --cds-font-size-body: 14px; --cds-font-size-heading: 15px; --cds-font-size-title: 26px; --cds-font-weight-medium: 600;
-  --cds-chart-muted: #c3c9d1; --cds-chart-axis: #8b949e; --cds-chart-grid: #e6e9ee; --cds-surface-popover: #ffffff; --cds-border: #d9dde3;
-  --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12); --cds-text-secondary: #656d76; --cds-dur-slow: .3s;
+  --maroon: #4a0b0b; --maroon-dark: #2d0505; --steel: #2f5f8f; --steel-bar: #3570a8; --bar-ly: #d6d6d6; --panel-head: #e9e9e9;
+  --cds-radius: 3px; --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 16px; --cds-pad-xl: 24px;
+  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+  --cds-font-size-caption: 11px; --cds-font-size-body: 13px; --cds-font-size-heading: 13px; --cds-font-size-title: 20px; --cds-font-weight-medium: 700;
+  --cds-chart-muted: #d6d6d6; --cds-chart-axis: #9a9a9a; --cds-chart-grid: #e6e6e6; --cds-surface-popover: #ffffff; --cds-border: #c9ccd8;
+  --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12); --cds-text-secondary: #6b6b6b; --cds-dur-slow: .3s;
 }
-@media (prefers-color-scheme: dark) { :root {
-  --color-fg: #e6edf3; --color-fg-muted: #9aa4b2; --color-bg: #0f1216; --color-panel: #171b21; --color-border-line: #2b323b;
-  --color-ok: #3fb950; --color-bad: #ff6b5e; --cds-chart-muted: #4a5360; --cds-chart-axis: #7d8794; --cds-chart-grid: #262c35;
-  --cds-surface-popover: #1f252d; --cds-border: #2b323b; --cds-text-secondary: #9aa4b2; } }
 html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 .sed th, .sed td { padding: 4px 5px !important; }
 .sed .tbox table { table-layout: auto; }
-#dash-root { padding: 20px clamp(12px, 3vw, 40px) 40px; max-width: 1500px; margin: 0 auto; }
-.public-note { font-size: 12px; color: var(--color-fg-muted); text-align: right; margin: 0 0 8px 0; }
+#dash-root { margin: 0; padding: 0; max-width: none; }
+.public-note { font-size: 11px; color: var(--color-fg-muted); text-align: right; margin: 6px 0 0 0; }
 .public-note .muted { opacity: .8; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 </head>
 <body>
 <div id="dash-root">
-<p class="public-note">Loading…</p>
 <div class="sed">
 <style>
-  #dash-root { --dash-gutter: var(--cds-pad-lg); }
-  .sed { font-family: var(--font-anthropic-sans); color: var(--color-fg); font-variant-numeric: tabular-nums; }
-  .sed .head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
-  .sed h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
-  .sed .sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-xs); }
-  .sed .controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
-  .sed .seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
-  .sed .seg button { background: var(--color-panel); color: var(--color-fg-muted); border: 0; padding: var(--cds-pad-xs) var(--cds-pad-sm); font: inherit; font-size: var(--cds-font-size-caption); cursor: pointer; }
-  .sed .seg button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
-  .sed .tabs { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); border-bottom: 1px solid var(--color-border-line); margin-bottom: var(--cds-gap-md); }
-  .sed .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: var(--cds-pad-xs) var(--cds-pad-sm); font: inherit; font-size: 15px; color: var(--color-fg-muted); cursor: pointer; }
-  .sed .tabs button[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .sed { font-family: var(--font-anthropic-sans); color: var(--color-fg); font-variant-numeric: tabular-nums; font-size: 13px;
+         display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+  /* ---- sidebar ---- */
+  .sed .side { background: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%); color: #f3e9e9; padding: 24px 0 32px; position: sticky; top: 0; align-self: start; height: 100vh; box-sizing: border-box; overflow: auto; }
+  .sed .brand { background: #fff; border-radius: 4px; margin: 0 22px 36px; padding: 8px 10px; text-align: center; color: #5a1010; }
+  .sed .brand .big { font-family: var(--font-anthropic-serif); font-size: 32px; font-weight: 700; letter-spacing: 1px; line-height: 1; }
+  .sed .brand .small { font-family: var(--font-anthropic-serif); font-size: 13px; letter-spacing: 2px; margin-top: 2px; }
+  .sed .side-title { font-size: 19px; font-weight: 600; text-align: center; line-height: 1.3; margin: 0 20px 28px; }
+  .sed .tabs { display: flex; flex-direction: column; gap: 2px; border: 0; margin: 0; }
+  .sed .tabs button { background: none; border: 0; border-left: 4px solid transparent; text-align: left; padding: 12px 24px 12px 28px; font: inherit; font-size: 16px; color: #e3d4d4; cursor: pointer; }
+  .sed .tabs button:hover { background: rgba(255,255,255,.06); }
+  .sed .tabs button[aria-selected="true"] { background: rgba(255,255,255,.12); border-left-color: #fff; color: #fff; font-weight: 600; }
+  /* ---- main ---- */
+  .sed .main { padding: 14px 18px 32px; min-width: 0; }
+  .sed .band { background: var(--steel); color: #fff; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 10px 16px; border: 1px solid #2a5078; }
+  .sed .band h1 { font-family: var(--font-anthropic-sans); font-size: 20px; font-weight: 700; margin: 0; }
+  .sed .band .sub { color: #dbe6f2; font-size: 11px; font-style: italic; margin-top: 3px; }
+  .sed .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .sed .ctl { background: #fff; color: var(--color-fg); border: 1px solid #c9ccd8; padding: 4px 6px 6px; }
+  .sed .ctl .lbl { font-size: 10px; font-weight: 700; color: #333; margin: 0 0 3px 2px; }
+  .sed .seg { display: inline-flex; border: 1px solid #c9ccd8; overflow: hidden; }
+  .sed .seg button { background: #fff; color: #777; border: 0; padding: 5px 10px; font: inherit; font-size: 11px; line-height: 1.2; cursor: pointer; }
+  .sed .seg button[aria-pressed="true"] { background: #2b2b2b; color: #fff; font-weight: 700; }
+  .sed .sdt { display: flex; gap: 6px; }
+  .sed .sdt .sd { background: #fff; border: 1px solid #c9ccd8; min-width: 78px; text-align: center; padding: 4px 8px; }
+  .sed .sdt .sd .k { color: var(--color-bad); font-size: 10px; line-height: 1.2; }
+  .sed .sdt .sd .v { color: var(--color-bad); font-size: 20px; font-weight: 700; line-height: 1.2; }
   .sed .page[hidden] { display: none; }
+  .sed .page { margin-top: 12px; }
   .sed .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
   .sed .grid.one { grid-template-columns: 1fr; }
-  .sed .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
-  .sed .card h2 { font-size: 19px; font-weight: var(--cds-font-weight-medium); margin: 0 0 3px 0; }
-  .sed .card .note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0 0 var(--cds-gap-sm) 0; }
-  .sed .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
+  /* ---- cards: white body, gray header bar ---- */
+  .sed .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 2px; padding: 0 10px 10px; min-width: 0; }
+  .sed .card > h2 { background: var(--panel-head); font-size: 13px; font-weight: 700; margin: 0 -10px 8px; padding: 7px 10px 6px; }
+  .sed .card > h2 + .note { background: var(--panel-head); margin: -8px -10px 8px; padding: 0 10px 6px; }
+  .sed .card .note { color: var(--color-fg-muted); font-size: 11px; margin: 0 0 var(--cds-gap-sm) 0; }
+  /* ---- KPI summary strip ---- */
+  .sed .tiles { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 2px; padding: 0 10px 10px; display: grid; gap: 10px; margin-bottom: var(--cds-gap-md); }
   .sed .tiles.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sed .tiles.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .sed .tiles .strip-head { grid-column: 1 / -1; background: var(--panel-head); margin: 0 -10px; padding: 7px 10px 6px; font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .sed .tiles .strip-head .rng { font-weight: 400; font-size: 11px; color: var(--color-fg-muted); }
   @media (max-width: 760px) { .sed .tiles.three, .sed .tiles.four { grid-template-columns: 1fr 1fr; } }
-  .sed .tile .k { color: var(--color-fg); font-size: 18px; font-weight: var(--cds-font-weight-medium); line-height: 1.25; }
-  .sed .tile .k .eq { color: var(--color-fg-muted); font-weight: 400; font-size: 14px; }
-  .sed .tile .v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 40px; line-height: 1.15; margin-top: 6px; }
-  .sed .tile .d { font-size: 13px; margin-top: 4px; }
-  .sed .tile.hero { border: 2px solid #2f6fed; background: color-mix(in srgb, #2f6fed 6%, var(--color-panel)); }
-  .sed .tile.hero .k { font-size: 18px; }
-  .sed .tile.hero .v { font-size: 50px; }
-  .sed .tile.hero .d b { font-weight: var(--cds-font-weight-medium); color: var(--color-fg); }
+  .sed .tile { background: #f3f3f3; border: 0; border-radius: 2px; padding: 6px 10px 7px; text-align: center; }
+  .sed .tile .k { color: #7a7a7a; font-size: 11px; font-weight: 400; line-height: 1.25; }
+  .sed .tile .k .eq { color: #9a9a9a; font-weight: 400; font-size: 10px; }
+  .sed .tile .v { font-family: var(--font-anthropic-sans); font-weight: 700; font-size: 24px; line-height: 1.2; margin-top: 2px; }
+  .sed .tile .d { font-size: 11px; margin-top: 2px; color: var(--color-fg-muted); }
+  .sed .tile.hero { background: #eef3f8; box-shadow: inset 0 3px 0 var(--steel); }
+  .sed .tile.hero .v { font-size: 28px; }
+  .sed .tile.hero .d b { font-weight: 700; color: var(--color-fg); }
   .sed .up { color: var(--color-ok); } .sed .down { color: var(--color-bad); }
   .sed .chart { width: 100%; }
   .sed .chart svg { display: block; width: 100%; height: auto; }
-  .sed .legend { display: flex; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-xs); }
-  .sed .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-  .sed table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
-  .sed th, .sed td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .sed .legend { display: flex; gap: var(--cds-gap-md); font-size: 11px; color: var(--color-fg-muted); margin-bottom: var(--cds-gap-xs); }
+  .sed .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  .sed table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .sed th, .sed td { text-align: right; padding: 4px 6px; border-bottom: 1px solid #e3e3e3; white-space: nowrap; }
   .sed th:first-child, .sed td:first-child { text-align: left; }
-  .sed th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); position: sticky; top: 0; background: var(--color-panel); }
+  .sed th { color: var(--color-fg-muted); font-weight: 700; position: sticky; top: 0; background: var(--color-panel); }
   .sed .tbox { max-height: 34rem; overflow: auto; }
-  .sed .tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); display: none; z-index: 2; }
+  .sed .tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: 3px; box-shadow: var(--cds-shadow-popover); padding: 4px 8px; font-size: 11px; display: none; z-index: 2; }
   .sed .rel { position: relative; }
-  .sed .tick text { fill: var(--color-fg-muted); font-size: 11px; }
+  .sed .tick text { fill: var(--color-fg-muted); font-size: 10px; }
   .sed .axis path, .sed .axis line { stroke: var(--cds-chart-axis); }
   .sed .gridl line { stroke: var(--cds-chart-grid); }
-  .sed .lab { font-size: 11px; fill: var(--color-fg); }
+  .sed .lab { font-size: 10px; fill: var(--color-fg); }
   .sed .lab.muted { fill: var(--color-fg-muted); }
-  .sed .cat { font-size: 12px; fill: var(--color-fg); }
+  .sed .cat { font-size: 11px; fill: var(--color-fg); }
   [data-dash-source-state=empty] { color: transparent; }
   [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
-  .sed .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); }
+  .sed .foot { color: var(--color-fg-muted); font-size: 11px; margin-top: var(--cds-gap-lg); }
+  @media (max-width: 900px) { .sed { grid-template-columns: 1fr; } .sed .side { position: static; height: auto; padding-bottom: 8px; } .sed .tabs { flex-direction: row; flex-wrap: wrap; padding: 0 12px; } .sed .tabs button { border-left: 0; border-bottom: 3px solid transparent; padding: 8px 10px; font-size: 14px; } .sed .tabs button[aria-selected="true"] { border-bottom-color: #fff; } }
 </style>
 
-<div class="head">
-  <div>
-    <h1 id="title">SED Sales Dashboard — 2026</h1>
-    <div class="sub">Last complete day of sales: <span data-source="windows" data-field="as_of" data-row="0" class="asof">—</span> · YTD <span class="ytdwin">—</span> vs <span class="pywin">—</span> · Selling days <span data-source="windows" data-field="selling_days_ytd" data-row="0">—</span> this year vs <span data-source="windows" data-field="selling_days_py_ytd" data-row="0">—</span> last year</div>
-  </div>
-  <div class="controls">
-    <div class="seg" role="group" aria-label="Metric">
-      <button class="m-btn" data-metric="ce" aria-pressed="true">Volume (CEs)</button>
-      <button class="m-btn" data-metric="gp" aria-pressed="false">Gross Profit</button>
-    </div>
-    <div class="seg" role="group" aria-label="Warehouse">
-      <button class="w-btn" data-wh="ALL" aria-pressed="true">All warehouses</button>
-      <button class="w-btn" data-wh="4" aria-pressed="false">Cypress (4)</button>
-      <button class="w-btn" data-wh="6" aria-pressed="false">Pasadena (6)</button>
-    </div>
-  </div>
-</div>
-
+<aside class="side">
+  <div class="brand"><div class="big">REDWOOD</div><div class="small">BEVERAGES</div></div>
+  <div class="side-title">SED Sales Reporting Dashboard</div>
 <div class="tabs" role="tablist">
   <button role="tab" data-page="ytd-pqd" aria-selected="true">YTD by PQD</button>
   <button role="tab" data-page="mtd-day" aria-selected="false">MTD by Day</button>
@@ -114,11 +117,35 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   <button role="tab" data-page="ytd-segment" aria-selected="false">YTD by Market Segment</button>
   <button role="tab" data-page="ytd-chain" aria-selected="false">YTD by Chain</button>
 </div>
+</aside>
+<main class="main">
+<div class="band">
+  <div>
+    <h1 id="title">YTD Sales by PQD</h1>
+    <div class="sub">'26 vs same period '25 — <b>Source:</b> Snowflake (SED_DB) · last complete day <span data-source="windows" data-field="as_of" data-row="0" class="asof">—</span> · YTD <span class="ytdwin">—</span> vs <span class="pywin">—</span></div>
+  </div>
+  <div class="controls">
+    <div class="ctl"><div class="lbl">Metric</div><div class="seg" role="group" aria-label="Metric">
+      <button class="m-btn" data-metric="ce" aria-pressed="true">Volume<br>(CEs)</button>
+      <button class="m-btn" data-metric="gp" aria-pressed="false">Gross<br>Profit</button>
+    </div></div>
+    <div class="ctl"><div class="lbl">Warehouse</div><div class="seg" role="group" aria-label="Warehouse">
+      <button class="w-btn" data-wh="ALL" aria-pressed="true">All</button>
+      <button class="w-btn" data-wh="4" aria-pressed="false">Cypress (4)</button>
+      <button class="w-btn" data-wh="6" aria-pressed="false">Pasadena (6)</button>
+    </div></div>
+    <div class="sdt">
+      <div class="sd"><div class="k">Selling Days<br>YTD</div><div class="v" data-source="windows" data-field="selling_days_ytd" data-row="0">—</div></div>
+      <div class="sd"><div class="k">Selling Days<br>PY YTD</div><div class="v" data-source="windows" data-field="selling_days_py_ytd" data-row="0">—</div></div>
+    </div>
+  </div>
+</div>
+<p class="public-note">Loading…</p>
 
 <!-- ===== YTD by PQD ===== -->
 <section class="page" id="ytd-pqd">
-  <div class="tiles three">
-    <div class="card tile"><div class="k">Current YTD <span class="mname">volume (CEs)</span></div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-ty">—</div><div class="d ytdwin2">—</div></div>
+  <div class="tiles three"><div class="strip-head"><span>YTD summary — <span class="mname">volume (CEs)</span></span><span class="rng"><span class="ytdwin2">—</span> vs <span class="pywin2">—</span></span></div>
+    <div class="card tile"><div class="k">Current YTD</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-ty">—</div><div class="d ytdwin2">—</div></div>
     <div class="card tile"><div class="k">Last year, same days</div><div class="v" data-source="tot" data-field="ce_ly" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-ly">—</div><div class="d pywin2">—</div></div>
     <div class="card tile"><div class="k">Change <span class="eq">(current − last)</span></div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-chg">—</div><div class="d" data-source="tot" data-field="ce_pct" data-where="scope=YTD&amp;wh=ALL" id="t-ytd-pct">—</div></div>
   </div>
@@ -133,10 +160,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 
 <!-- ===== MTD by Day ===== -->
 <section class="page" id="mtd-day" hidden>
-  <div class="tiles four">
+  <div class="tiles four"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng"><span class="mtdwin2">—</span> vs <span class="pymtdwin2">—</span></span></div>
     <div class="card tile"><div class="k">Today <span class="eq">(last complete day)</span></div><div class="v" id="t-today-ty">—</div><div class="d" id="t-today-d">—</div></div>
     <div class="card tile"><div class="k">Last year, same weekday</div><div class="v" id="t-today-ly">—</div><div class="d" id="t-today-ld">—</div></div>
-    <div class="card tile hero"><div class="k">MTD <span class="mname">volume (CEs)</span> <span class="eq">(month to date)</span></div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d"><span class="mtdwin2">—</span> · last year, same days <b data-source="tot" data-field="ce_ly" data-where="scope=MTD&amp;wh=ALL">—</b> · <span data-source="windows" data-field="selling_days_mtd" data-row="0">—</span> vs <span data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</span> selling days</div></div>
+    <div class="card tile hero"><div class="k">MTD <span class="eq">(month to date)</span></div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d"><span class="mtdwin2">—</span> · last year, same days <b data-source="tot" data-field="ce_ly" data-where="scope=MTD&amp;wh=ALL">—</b> · <span data-source="windows" data-field="selling_days_mtd" data-row="0">—</span> vs <span data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</span> selling days</div></div>
     <div class="card tile"><div class="k">MTD change <span class="eq">(current − last)</span></div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL">—</div></div>
   </div>
   <div class="grid one">
@@ -148,8 +175,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 
 <!-- ===== MTD by PQD ===== -->
 <section class="page" id="mtd-pqd" hidden>
-  <div class="tiles three">
-    <div class="card tile"><div class="k">Current MTD <span class="mname">volume (CEs)</span></div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d"><span class="mtdwin2">—</span> · <span data-source="windows" data-field="selling_days_mtd" data-row="0">—</span> vs <span data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</span> selling days</div></div>
+  <div class="tiles three"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng"><span class="mtdwin2">—</span> vs <span class="pymtdwin2">—</span></span></div>
+    <div class="card tile"><div class="k">Current MTD</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d"><span class="mtdwin2">—</span> · <span data-source="windows" data-field="selling_days_mtd" data-row="0">—</span> vs <span data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</span> selling days</div></div>
     <div class="card tile"><div class="k">Last year, same days</div><div class="v" data-source="tot" data-field="ce_ly" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d pymtdwin2">—</div></div>
     <div class="card tile"><div class="k">Change <span class="eq">(current − last)</span></div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL">—</div></div>
   </div>
@@ -223,6 +250,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 </section>
 
 <p class="foot">Volume = case equivalents (cases × oz per case ÷ 288; bottle-unit lines excluded, as in the Power BI model). Gross profit = product sales − invoice discount − product cost. Items with no Product Designation (PQD) are out of scope; THC is left off the PQD views. Windows end on the last complete day of sales; last year is the same calendar days one year earlier (the daily chart matches weekdays, 364 days back). Data: SED_DB.PUBLIC views (VW_BASE_SALES_V2 by year, VW_BASE_ITEMS_V2, VW_ALL_ACCOUNTS_V2) — rebuilt every morning after the overnight load, or pulled live from Snowflake on demand.</p>
+</main>
 </div>
 
 
@@ -277,7 +305,7 @@ window.sedBoot = function () {
   const D = window.__SED_DATA, calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: 'ytd-pqd' }, listeners = [];
   const compute = (id) => { const c = calcs[id]; if (!c) return; results[id] = c.fn(...c.inputs.map((i) => (D[i] || results[i]))); };
   const dash = {
-    colors: ['#2f6fed', '#e67e22', '#2e9e6b', '#c0392b', '#8e44ad', '#16a085', '#d35400', '#7f8c8d'],
+    colors: ['#3570a8', '#e67e22', '#2e9e6b', '#c0392b', '#8e44ad', '#16a085', '#d35400', '#7f8c8d'],
     data: (id) => { const d = D[id] ?? results[id]; return d ? { status: 'ok', data: d, columns: d.length ? Object.keys(d[0]) : [], meta: [], refreshing: false } : { status: 'missing', data: [], meta: [] }; },
     calc: (id, o) => { calcs[id] = o; compute(id); },
     loader: () => {},
@@ -583,7 +611,8 @@ function table(tbl, rows, key, limit) {
 const $ = (s, root) => (root || document).querySelector(s), $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 $$('.m-btn').forEach((b) => b.addEventListener('click', () => { state.metric = b.dataset.metric; dash.setParams({ metric: state.metric }); }));
 $$('.w-btn').forEach((b) => b.addEventListener('click', () => { state.wh = b.dataset.wh; dash.setParams({ wh: state.wh }); }));
-$$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; dash.setLink(state.page); dash.setParams({ page: state.page }); }));
+const PAGE_TITLES = { 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD Sales by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
+$$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; $('#title').textContent = PAGE_TITLES[state.page] || b.textContent; dash.setLink(state.page); dash.setParams({ page: state.page }); }));
 { const named = location.hash.slice(1); if (named && document.getElementById(named)) state.page = named; }
 
 /* ---------- draw everything ---------- */
