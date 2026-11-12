@@ -92,6 +92,9 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed th:first-child, .sed td:first-child { text-align: left; }
   .sed th { color: var(--color-fg-muted); font-weight: 700; position: sticky; top: 0; background: var(--color-panel); }
   .sed .tbox { max-height: 34rem; overflow: auto; }
+  .sed tr.total td { font-weight: 700; border-top: 2px solid #9a9a9a; border-bottom: 0; }
+  .sed .pie-card { padding-top: 10px; }
+  .sed .split-cap { font-size: 11px; font-style: italic; color: var(--color-fg-muted); margin: 2px 0 0 14px; }
   .sed .tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: 3px; box-shadow: var(--cds-shadow-popover); padding: 4px 8px; font-size: 11px; display: none; z-index: 2; }
   .sed .rel { position: relative; }
   .sed .tick text { fill: var(--color-fg-muted); font-size: 10px; }
@@ -123,7 +126,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <div class="band">
   <div>
     <h1 id="title">YTD Sales by PQD</h1>
-    <div class="sub">'26 vs same period '25 — <b>Source:</b> Snowflake (SED_DB) · last complete day <span data-source="windows" data-field="as_of" data-row="0" class="asof">—</span> · YTD <span class="ytdwin">—</span> vs <span class="pywin">—</span></div>
+    <div class="sub">'26 vs same period. '25 ~ <b>Source:</b> Snowflake (SED_DB)</div>
   </div>
   <div class="controls">
     <div class="ctl"><div class="lbl">Metric</div><div class="seg" role="group" aria-label="Metric">
@@ -153,10 +156,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=YTD&amp;wh=ALL" data-plain="1" id="t-ytd-pct">—</div></div>
   </div>
   <div class="grid" style="grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs) by PQD</h2><p class="note subwin">—</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year</span></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-pqd-ytd" data-source="by_pqd"></div></div>
-    <div class="card"><h2 class="ttl-trend">Monthly volume (CEs) trend by PQD</h2><p class="note">This year as a line, last year as bars · header = YTD vs last year, same days</p>
+    <div class="card"><h2 class="ttl-trend">Monthly Volume (CEs) trend</h2><p class="note subwin">—</p>
       <div class="chart rel" id="c-trend" data-source="trend by_pqd"></div></div>
   </div>
 </section>
@@ -169,8 +172,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
   <div class="grid one">
-    <div class="card"><h2 class="ttl-daily">Daily volume (CEs) — this year vs last year</h2><p class="note mtdnote">—</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year (same weekday)</span></div>
+    <div class="card"><h2 class="ttl-daily">Daily volume (CEs) — this year vs last year</h2><p class="note mtdnote-wd">—</p>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year (same weekday)</span></div>
       <div class="chart rel" id="c-daily" data-source="daily"></div></div>
   </div>
 </section>
@@ -183,10 +186,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
   <div class="grid">
-    <div class="card"><h2 class="ttl-mtd">MTD volume (CEs) by PQD</h2><p class="note mtdnote">—</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year</span></div>
+    <div class="card"><h2 class="ttl-mtd">MTD volume (CEs)</h2><p class="note mtdnote">—</p>
+      <div class="legend"><span><i class="sw-ty"></i>This Year (MTD)</span><span><i class="sw-ly"></i>Last Year (MTD)</span></div>
       <div class="chart rel" id="c-pqd-mtd" data-source="by_pqd"></div></div>
-    <div class="card"><h2 class="ttl-mtdchg">MTD volume change (CEs) vs last year by PQD</h2><p class="note mtdnote">—</p>
+    <div class="card"><h2 class="ttl-mtdchg">MTD volume change (CEs)</h2><p class="note mtdnote">—</p>
       <div class="chart rel" id="c-pqd-mtdchg" data-source="by_pqd"></div></div>
   </div>
 </section>
@@ -194,14 +197,14 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== YTD by Supplier ===== -->
 <section class="page" id="ytd-supplier" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">Top 10 suppliers by YTD CEs</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year</span></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-sup-bar" data-source="sup_top"></div></div>
-    <div class="card"><h2>Top 20 — YTD <span class="mshort">volume (CEs)</span></h2><p class="note subwin">—</p>
-      <div class="tbox"><table id="tb-sup" data-source="sup_top" data-row-key="supplier"><thead><tr><th data-field="supplier">Supplier</th><th class="h-ty" data-field="ce_ty">This year</th><th class="h-ly" data-field="ce_ly">Last year</th><th class="h-chg" data-field="ce_chg">Change</th><th class="h-pct" data-field="ce_pct">Trend</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="tbox"><table id="tb-sup" data-source="sup_top" data-row-key="supplier"><thead><tr><th data-field="supplier">Supplier</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     <div>
-      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">by change vs last year, within the top 20</p><div class="chart rel" id="c-sup-up" data-source="sup_top"></div></div>
-      <div class="card"><h2>Bottom 5 decliners</h2><p class="note subwin">by change vs last year, within the top 20</p><div class="chart rel" id="c-sup-down" data-source="sup_top"></div></div>
+      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">—</p><div class="chart rel" id="c-sup-up" data-source="sup_top"></div></div>
+      <div class="card"><h2>Bottom 5 decliners</h2><p class="note subwin">—</p><div class="chart rel" id="c-sup-down" data-source="sup_top"></div></div>
     </div>
   </div>
 </section>
@@ -209,14 +212,14 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== YTD by Brand Family ===== -->
 <section class="page" id="ytd-brand" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">Top 10 brand families by YTD CEs</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year</span></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-bf-bar" data-source="bf_top"></div></div>
-    <div class="card"><h2>Top 20 — YTD <span class="mshort">volume (CEs)</span></h2><p class="note subwin">—</p>
-      <div class="tbox"><table id="tb-bf" data-source="bf_top" data-row-key="brand_family"><thead><tr><th data-field="brand_family">Brand family</th><th class="h-ty" data-field="ce_ty">This year</th><th class="h-ly" data-field="ce_ly">Last year</th><th class="h-chg" data-field="ce_chg">Change</th><th class="h-pct" data-field="ce_pct">Trend</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="tbox"><table id="tb-bf" data-source="bf_top" data-row-key="brand_family"><thead><tr><th data-field="brand_family">Brand Family</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     <div>
-      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">by change vs last year, within the top 20</p><div class="chart rel" id="c-bf-up" data-source="bf_top"></div></div>
-      <div class="card"><h2>Bottom 5 decliners</h2><p class="note subwin">by change vs last year, within the top 20</p><div class="chart rel" id="c-bf-down" data-source="bf_top"></div></div>
+      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">—</p><div class="chart rel" id="c-bf-up" data-source="bf_top"></div></div>
+      <div class="card"><h2>Bottom 5 decliners</h2><p class="note subwin">—</p><div class="chart rel" id="c-bf-down" data-source="bf_top"></div></div>
     </div>
   </div>
 </section>
@@ -225,33 +228,33 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <section class="page" id="ytd-segment" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
     <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year</span></div>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-seg-bar" data-source="seg"></div></div>
     <div>
-      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>YTD <span class="mshort">volume (CEs)</span> by segment</h2>
-        <div class="tbox"><table id="tb-seg" data-source="seg" data-row-key="segment"><thead><tr><th data-field="segment">Segment</th><th class="h-ty" data-field="ce_ty">This year</th><th class="h-ly" data-field="ce_ly">Last year</th><th class="h-chg" data-field="ce_chg">Change</th><th class="h-pct" data-field="ce_pct">Trend</th></tr></thead><tbody></tbody></table></div></div>
-      <div class="card"><h2>YTD <span class="mshort">volume (CEs)</span> share</h2><p class="note">share of this year's total</p><div class="chart rel pie" id="c-seg-pie" data-source="seg"></div></div>
+      <div class="card pie-card" style="margin-bottom: var(--cds-gap-md);"><div class="chart rel pie" id="c-seg-pie" data-source="seg"></div></div>
+      <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+        <div class="tbox"><table id="tb-seg" data-source="seg" data-row-key="segment" data-sort="chg"><thead><tr><th data-field="segment">Mkt. Seg.</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     </div>
-    <div class="card"><h2 class="ttl-ytdchg">YTD volume change (CEs) vs last year</h2><p class="note subwin">—</p><div class="chart rel" id="c-seg-chg" data-source="seg"></div></div>
+    <div class="card"><h2 class="ttl-ytdchg">YTD volume change (CEs)</h2><p class="note subwin">—</p><div class="chart rel" id="c-seg-chg" data-source="seg"></div></div>
   </div>
 </section>
 
 <!-- ===== YTD by Chain ===== -->
 <section class="page" id="ytd-chain" hidden>
   <div class="grid" style="grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr);">
-    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">Top 10 chains by YTD CEs (independents excluded)</p>
-      <div class="legend"><span><i class="sw-ty"></i>This year</span><span><i class="sw-ly"></i>Last year</span></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year</span></div>
       <div class="chart rel" id="c-ch-bar" data-source="chain_top"></div></div>
-    <div class="card"><h2>Top 20 chains — YTD <span class="mshort">volume (CEs)</span></h2><p class="note subwin">—</p>
-      <div class="tbox"><table id="tb-ch" data-source="chain_top" data-row-key="chain"><thead><tr><th data-field="chain">Chain</th><th class="h-ty" data-field="ce_ty">This year</th><th class="h-ly" data-field="ce_ly">Last year</th><th class="h-chg" data-field="ce_chg">Change</th><th class="h-pct" data-field="ce_pct">Trend</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><h2 class="ttl-ytd">YTD volume (CEs)</h2><p class="note subwin">—</p>
+      <div class="tbox"><table id="tb-ch" data-source="chain_top" data-row-key="chain"><thead><tr><th data-field="chain">Chain</th><th class="h-ty" data-field="ce_ty">This Year</th><th class="h-ly" data-field="ce_ly">Last Year</th><th class="h-chg" data-field="ce_chg">YTD Change</th><th class="h-pct" data-field="ce_pct">Trend %</th></tr></thead><tbody></tbody></table></div></div>
     <div>
-      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">by change vs last year, within the top 20 (independents included)</p><div class="chart rel" id="c-ch-up" data-source="chain_top"></div></div>
-      <div class="card"><h2>Bottom 5 decliners</h2><p class="note subwin">by change vs last year, within the top 20</p><div class="chart rel" id="c-ch-down" data-source="chain_top"></div></div>
+      <div class="card" style="margin-bottom: var(--cds-gap-md);"><h2>Top 5 gainers</h2><p class="note subwin">—</p><div class="chart rel" id="c-ch-up" data-source="chain_top"></div></div>
+      <div class="card"><h2>Bottom 5 decliners</h2><p class="note subwin">—</p><div class="chart rel" id="c-ch-down" data-source="chain_top"></div></div>
     </div>
   </div>
 </section>
 
-<p class="foot">Volume = case equivalents (cases × oz per case ÷ 288; bottle-unit lines excluded, as in the Power BI model). Gross profit = product sales − invoice discount − product cost. Items with no Product Designation (PQD) are out of scope; THC is left off the PQD views. Windows end on the last complete day of sales; last year is the same calendar days one year earlier (the daily chart matches weekdays, 364 days back). MTD selling days are counted through today, as in the Power BI report. Data: SED_DB.PUBLIC views (VW_BASE_SALES_V2 by year, VW_BASE_ITEMS_V2, VW_ALL_ACCOUNTS_V2) — rebuilt every morning after the overnight load, or pulled live from Snowflake on demand.</p>
+<p class="foot">Volume = case equivalents (cases × oz per case ÷ 288; bottle-unit lines excluded, as in the Power BI model). Gross profit = product sales − invoice discount − product cost. Items with no Product Designation (PQD) are out of scope; THC is left off the monthly trend panels. Windows end on the last complete day of sales; last year is the same calendar days one year earlier (the daily chart matches weekdays, 364 days back). MTD selling days are counted through today, as in the Power BI report. Data: SED_DB.PUBLIC views (VW_BASE_SALES_V2 by year, VW_BASE_ITEMS_V2, VW_ALL_ACCOUNTS_V2) — rebuilt every morning after the overnight load, or pulled live from Snowflake on demand.</p>
 </main>
 </div>
 
@@ -269,7 +272,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     if (!booted) { window.sedBoot(); window.sedCalcs(); window.sedRender(); booted = true; }
     else { window.dash.setParams({}); }
     const q = payload.meta || {};
-    note.innerHTML = label + ' · queried ' + fmt(q.queried_at) + ' · <a href="#" id="live-refresh">refresh from Snowflake now</a> <span class="muted">(about 2 min)</span>';
+    const asOf = (payload.windows && payload.windows[0] && payload.windows[0].as_of) || ''; const mdy2 = (s) => s ? (+s.slice(5, 7)) + '/' + (+s.slice(8, 10)) + '/' + s.slice(0, 4) : '';
+    note.innerHTML = 'Last complete day of sales ' + mdy2(asOf) + ' · ' + label + ' · queried ' + fmt(q.queried_at) + ' · <a href="#" id="live-refresh">refresh from Snowflake now</a> <span class="muted">(about 2 min)</span>';
     document.getElementById('live-refresh').addEventListener('click', (e) => { e.preventDefault(); live(true); });
   }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -340,13 +344,12 @@ dash.calc('tot', { inputs: ['ytd_pqd', 'mtd_pqd'], title: 'YTD and MTD totals', 
     return out;
   } });
 
-dash.calc('by_pqd', { inputs: ['ytd_pqd', 'mtd_pqd'], title: 'YTD and MTD by PQD', description: 'This year vs last year per PQD (THC excluded), per warehouse and for all warehouses, with change and trend.',
+dash.calc('by_pqd', { inputs: ['ytd_pqd', 'mtd_pqd'], title: 'YTD and MTD by PQD', description: 'This year vs last year per PQD, per warehouse and for all warehouses, with change and trend.',
   fn: (ytd_pqd, mtd_pqd) => {
     const out = [];
     for (const [scope, rows] of [['YTD', ytd_pqd], ['MTD', mtd_pqd]]) {
       const m = new Map();
       for (const r of rows) for (const wh of ['ALL', r.wh]) {
-        if (r.pqd === 'THC') continue; // THC left off the PQD views
         const k = r.pqd + '|' + wh;
         if (!m.has(k)) m.set(k, { scope, pqd: r.pqd, wh, ce_ty: 0, ce_ly: 0, gp_ty: 0, gp_ly: 0 });
         const o = m.get(k); o.ce_ty += Number(r.ce_ty) || 0; o.ce_ly += Number(r.ce_ly) || 0; o.gp_ty += Number(r.gp_ty) || 0; o.gp_ly += Number(r.gp_ly) || 0;
@@ -360,7 +363,7 @@ dash.calc('trend', { inputs: ['monthly_pqd'], title: 'Monthly trend by PQD', des
   fn: (monthly_pqd) => {
     const m = new Map();
     for (const r of monthly_pqd) for (const wh of ['ALL', r.wh]) {
-      if (r.pqd === 'THC') continue; // THC left off the PQD views
+      if (r.pqd === 'THC') continue; // THC left off the trend panels, as in the report
       const k = [r.pqd, wh, r.year, r.month].join('|');
       if (!m.has(k)) m.set(k, { pqd: r.pqd, wh, year: Number(r.year), month: Number(r.month), ce: 0, gp: 0 });
       const o = m.get(k); o.ce += Number(r.ce) || 0; o.gp += Number(r.gp) || 0;
@@ -427,19 +430,20 @@ dash.calc('seg', { inputs: ['ytd_segment'], title: 'YTD by market segment', desc
     return [...m.values()].map((o) => ({ ...o, ce_chg: o.ce_ty - o.ce_ly, gp_chg: o.gp_ty - o.gp_ly, ce_pct: o.ce_ly ? (o.ce_ty - o.ce_ly) / o.ce_ly : null, gp_pct: o.gp_ly ? (o.gp_ty - o.gp_ly) / o.gp_ly : null })).sort((a, b) => a.sort - b.sort);
   } });
 
-dash.calc('chain_top', { inputs: ['ytd_chain'], title: 'Top 20 chains YTD', description: 'Chains ranked by this year\'s CEs on the full chain name within each warehouse view; the top 20 are kept and summed by short name, as the Power BI page does.',
+dash.calc('chain_top', { inputs: ['ytd_chain'], title: 'Top 20 chains YTD', description: 'Independents are left off; the remaining chains are ranked by this year\'s CEs on the full chain name within each warehouse view, the top 20 kept and summed by short name (HEB, KROGER, …), as the report\'s Top N filter does.',
   fn: (ytd_chain) => {
     const byName = new Map();
     for (const r of ytd_chain) for (const wh of ['ALL', r.wh]) {
+      if (String(r.is_chain).toLowerCase() !== 'true') continue;
       const k = r.chain_name + '|' + wh;
-      if (!byName.has(k)) byName.set(k, { chain_name: r.chain_name, chain: r.chain, is_chain: String(r.is_chain).toLowerCase() === 'true', wh, ce_ty: 0, ce_ly: 0, gp_ty: 0, gp_ly: 0 });
+      if (!byName.has(k)) byName.set(k, { chain_name: r.chain_name, chain: r.chain, is_chain: true, wh, ce_ty: 0, ce_ly: 0, gp_ty: 0, gp_ly: 0 });
       const o = byName.get(k); o.ce_ty += Number(r.ce_ty) || 0; o.ce_ly += Number(r.ce_ly) || 0; o.gp_ty += Number(r.gp_ty) || 0; o.gp_ly += Number(r.gp_ly) || 0;
     }
     const short = new Map();
     for (const wh of ['ALL', '4', '6']) {
       [...byName.values()].filter((o) => o.wh === wh).sort((a, b) => b.ce_ty - a.ce_ty).slice(0, 20).forEach((o, i) => {
         const k = o.chain + '|' + wh;
-        if (!short.has(k)) short.set(k, { chain: o.chain, wh, is_chain: o.is_chain, rank: i + 1, ce_ty: 0, ce_ly: 0, gp_ty: 0, gp_ly: 0 });
+        if (!short.has(k)) short.set(k, { chain: o.chain, wh, is_chain: true, rank: i + 1, ce_ty: 0, ce_ly: 0, gp_ty: 0, gp_ly: 0 });
         const s = short.get(k); s.ce_ty += o.ce_ty; s.ce_ly += o.ce_ly; s.gp_ty += o.gp_ty; s.gp_ly += o.gp_ly; s.rank = Math.min(s.rank, i + 1);
       });
     }
@@ -452,13 +456,15 @@ dash.calc('chain_top', { inputs: ['ytd_chain'], title: 'Top 20 chains YTD', desc
 window.sedRender = function () {
 /* ---------- page state, formatting, drawing ---------- */
 const state = { metric: 'ce', wh: 'ALL', page: 'ytd-pqd' };
-const TY = dash.colors[0], LY = 'var(--cds-chart-muted)', UP = 'var(--color-ok)', DOWN = 'var(--color-bad)';
+const TY = dash.colors[0], LY = 'var(--cds-chart-muted)', UP = '#6fc38c', DOWN = '#e8a3a3';
+const labTspans = (t, val, pc, neg) => { t.text(''); t.append('tspan').attr('font-weight', 700).attr('fill', neg ? '#c0392b' : '#1f1f1f').text(val + ' '); t.append('tspan').attr('font-style', 'italic').attr('fill', '#6b6b6b').text('(' + pc + ')'); };
 const isGP = () => state.metric === 'gp';
 const F = { ty: () => state.metric + '_ty', ly: () => state.metric + '_ly', chg: () => state.metric + '_chg', pct: () => state.metric + '_pct' };
 const compact = { format: (v) => { const a = Math.abs(v); if (a >= 1e6) return (Math.sign(v) * Math.round(a / 1e5) / 10).toLocaleString('en', { maximumFractionDigits: 1 }) + 'M'; if (a >= 1e5) return Math.round(v / 1e3).toLocaleString('en') + 'K'; if (a >= 1e3) return (Math.sign(v) * Math.round(a / 100) / 10).toLocaleString('en', { maximumFractionDigits: 1 }) + 'K'; return Math.round(v).toLocaleString('en'); } };
 const fmt = (v) => v == null || isNaN(v) ? '—' : (isGP() ? '$' : '') + compact.format(v);
 const fmtS = (v) => v == null || isNaN(v) ? '—' : (v < 0 ? '−' : '+') + (isGP() ? '$' : '') + compact.format(Math.abs(v));
 const fmtFull = (v) => v == null || isNaN(v) ? '—' : (isGP() ? '$' : '') + d3.format(',.0f')(v);
+const fmtFullS = (v) => v == null || isNaN(v) ? '—' : (v < 0 ? '−' : '+') + (isGP() ? '$' : '') + d3.format(',.0f')(Math.abs(v));
 const pct = (p) => p == null || isNaN(p) ? 'n/a' : (p < 0 ? '−' : '+') + d3.format('.1%')(Math.abs(p));
 const mdy = (s) => { if (!s) return '—'; const [y, m, d] = s.split('-').map(Number); return `${m}/${d}/${y}`; };
 const mname = () => isGP() ? 'gross profit ($)' : 'volume (CEs)';
@@ -506,17 +512,17 @@ function changeBars(box, rows, nameKey, sortByChange) {
   const x = d3.scaleLinear([mn, mx], [pad + 8, w - pad - 8]);
   const y = d3.scaleBand(rows2.map((r) => r[nameKey]), [8, h - 20]).paddingInner(0.35);
   svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 8).attr('y2', h - 20).attr('stroke', 'var(--cds-chart-axis)');
-  svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - 20})`).call(d3.axisBottom(x).ticks(4).tickFormat(fmtS).tickSize(0)).attr('font-size', null).attr('font-family', null).select('.domain').remove();
+  svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - 20})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((w - 2 * pad) / 90))).tickFormat(fmtS).tickSize(0)).attr('font-size', null).attr('font-family', null).select('.domain').remove();
   const g = svg.selectAll('.r').data(rows2).join('g').attr('transform', (r) => `translate(0,${y(r[nameKey])})`);
-  g.append('rect').attr('x', (r) => Math.min(x(0), x(r[F.chg()]))).attr('width', (r) => Math.abs(x(r[F.chg()]) - x(0))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', (r) => r[F.chg()] < 0 ? DOWN : UP).attr('fill-opacity', 0.8);
+  g.append('rect').attr('x', (r) => Math.min(x(0), x(r[F.chg()]))).attr('width', (r) => Math.abs(x(r[F.chg()]) - x(0))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', (r) => r[F.chg()] < 0 ? DOWN : UP);
   g.append('text').attr('class', 'cat').attr('x', (r) => r[F.chg()] < 0 ? x(0) + 6 : x(0) - 6).attr('text-anchor', (r) => r[F.chg()] < 0 ? 'start' : 'end').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text((r) => r[nameKey]);
-  g.append('text').attr('class', 'lab').attr('x', (r) => r[F.chg()] < 0 ? x(r[F.chg()]) - 5 : x(r[F.chg()]) + 5).attr('text-anchor', (r) => r[F.chg()] < 0 ? 'end' : 'start').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text(lab);
+  g.append('text').attr('class', 'lab').attr('x', (r) => r[F.chg()] < 0 ? x(r[F.chg()]) - 5 : x(r[F.chg()]) + 5).attr('text-anchor', (r) => r[F.chg()] < 0 ? 'end' : 'start').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').each(function (r) { labTspans(d3.select(this), fmtS(r[F.chg()]), pct(r[F.pct()]), r[F.chg()] < 0); });
   g.on('mousemove', (ev, r) => showTip(box, ev, `<div style="color:var(--cds-text-secondary)">${esc(r[nameKey])}</div><div>This year ${fmtFull(r[F.ty()])}</div><div>Last year ${fmtFull(r[F.ly()])}</div><div>Change ${fmtS(r[F.chg()])} (${pct(r[F.pct()])})</div>`)).on('mouseleave', () => hideTip(box));
 }
 
 /* movers: top 5 gainers or bottom 5 decliners within the top 20 */
-function movers(box, rows, nameKey, up) {
-  const r2 = rows.filter((r) => r.rank <= 20).slice().sort((a, b) => up ? b[F.chg()] - a[F.chg()] : a[F.chg()] - b[F.chg()]).filter((r) => up ? r[F.chg()] > 0 : r[F.chg()] < 0).slice(0, 5);
+function movers(box, rows, nameKey, up, keep) {
+  const r2 = rows.filter((r) => r.rank <= 20 && (!keep || keep(r))).slice().sort((a, b) => up ? b[F.chg()] - a[F.chg()] : a[F.chg()] - b[F.chg()]).filter((r) => up ? r[F.chg()] > 0 : r[F.chg()] < 0).slice(0, 5);
   if (!r2.length) { box.innerHTML = '<p class="note">none</p>'; return; }
   const w = Math.max(280, box.clientWidth), rowH = 30, h = r2.length * rowH + 8, svg = svgIn(box, w, h);
   const lab = (r) => fmtS(r[F.chg()]) + ' (' + (r[F.ly()] === 0 ? 'New' : pct(r[F.pct()])) + ')';
@@ -526,12 +532,12 @@ function movers(box, rows, nameKey, up) {
   const g = svg.selectAll('.r').data(r2).join('g').attr('transform', (r) => `translate(0,${y(r[nameKey])})`);
   if (up) {
     g.append('text').attr('class', 'cat').attr('x', nameW - 6).attr('text-anchor', 'end').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text((r) => r[nameKey].slice(0, 18));
-    g.append('rect').attr('x', nameW).attr('width', (r) => x(Math.abs(r[F.chg()]))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', UP).attr('fill-opacity', 0.75);
-    g.append('text').attr('class', 'lab').attr('x', (r) => nameW + x(Math.abs(r[F.chg()])) + 5).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text(lab);
+    g.append('rect').attr('x', nameW).attr('width', (r) => x(Math.abs(r[F.chg()]))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', UP);
+    g.append('text').attr('class', 'lab').attr('x', (r) => nameW + x(Math.abs(r[F.chg()])) + 5).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').each(function (r) { labTspans(d3.select(this), fmtS(r[F.chg()]), r[F.ly()] === 0 ? 'New' : pct(r[F.pct()]), false); });
   } else {
     g.append('text').attr('class', 'cat').attr('x', w - nameW + 6).attr('text-anchor', 'start').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text((r) => r[nameKey].slice(0, 18));
-    g.append('rect').attr('x', (r) => w - nameW - x(Math.abs(r[F.chg()]))).attr('width', (r) => x(Math.abs(r[F.chg()]))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', DOWN).attr('fill-opacity', 0.75);
-    g.append('text').attr('class', 'lab').attr('x', (r) => w - nameW - x(Math.abs(r[F.chg()])) - 5).attr('text-anchor', 'end').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text(lab);
+    g.append('rect').attr('x', (r) => w - nameW - x(Math.abs(r[F.chg()]))).attr('width', (r) => x(Math.abs(r[F.chg()]))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', DOWN);
+    g.append('text').attr('class', 'lab').attr('x', (r) => w - nameW - x(Math.abs(r[F.chg()])) - 5).attr('text-anchor', 'end').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').each(function (r) { labTspans(d3.select(this), fmtS(r[F.chg()]), pct(r[F.pct()]), true); });
   }
   g.on('mousemove', (ev, r) => showTip(box, ev, `<div style="color:var(--cds-text-secondary)">${esc(r[nameKey])}</div><div>This year ${fmtFull(r[F.ty()])}</div><div>Last year ${fmtFull(r[F.ly()])}</div>`)).on('mouseleave', () => hideTip(box));
 }
@@ -540,9 +546,9 @@ function movers(box, rows, nameKey, up) {
 function trendPanels(box, trend, byPqd, asOf) {
   const w = Math.max(320, box.clientWidth);
   const tys = Number(asOf.slice(0, 4)), lastMonth = Number(asOf.slice(5, 7)) - 1; // last complete month this year
-  const pqds = sel(byPqd).filter((r) => r.scope === 'YTD').sort((a, b) => b.ce_ty - a.ce_ty).map((r) => r);
+  const pqds = sel(byPqd).filter((r) => r.scope === 'YTD' && r.pqd !== 'THC').sort((a, b) => b.ce_ty - a.ce_ty).map((r) => r);
   const cols = w > 560 ? 3 : 2, pw = (w - (cols - 1) * 12) / cols, ph = 205, rowsN = Math.ceil(pqds.length / cols), h = rowsN * (ph + 12);
-  const svg = svgIn(box, w, h); const m = { t: 46, r: 10, b: 20, l: 10 };
+  const svg = svgIn(box, w, h); const m = { t: 34, r: 10, b: 20, l: 10 };
   pqds.forEach((p, i) => {
     const gx = (i % cols) * (pw + 12), gy = Math.floor(i / cols) * (ph + 12);
     const g = svg.append('g').attr('transform', `translate(${gx},${gy})`);
@@ -550,8 +556,7 @@ function trendPanels(box, trend, byPqd, asOf) {
     const ty = d3.range(1, 13).map((mo) => { const r = rows.find((r) => r.year === tys && r.month === mo); return { mo, v: mo <= lastMonth && r ? r[state.metric] : null }; });
     const ly = d3.range(1, 13).map((mo) => { const r = rows.find((r) => r.year === tys - 1 && r.month === mo); return { mo, v: r ? r[state.metric] : 0 }; });
     g.append('rect').attr('width', pw).attr('height', ph).attr('rx', 6).attr('fill', 'none').attr('stroke', 'var(--color-border-line)');
-    g.append('text').attr('x', 10).attr('y', 20).attr('font-size', 15).attr('font-weight', 600).attr('fill', 'var(--color-fg)').text(p.pqd);
-    g.append('text').attr('x', 10).attr('y', 37).attr('font-size', 12).attr('fill', 'var(--color-fg-muted)').text(`YTD ${fmt(p[F.ty()])} · ${pct(p[F.pct()])} vs LY`);
+    { const t = g.append('text').attr('x', 10).attr('y', 22).attr('font-size', 13).attr('fill', 'var(--color-fg)'); t.append('tspan').attr('font-weight', 700).text(`${p.pqd} · ${fmt(p[F.ty()])} `); t.append('tspan').attr('font-size', 11).attr('font-style', 'italic').attr('fill', 'var(--color-fg-muted)').text(`(${pct(p[F.pct()])})`); }
     const x = d3.scaleBand(d3.range(1, 13), [m.l, pw - m.r]).paddingInner(0.35);
     const yMax = d3.max([...ty, ...ly], (d) => d.v || 0) || 1;
     const y = d3.scaleLinear([0, yMax], [ph - m.b, m.t]);
@@ -595,27 +600,45 @@ function pieChart(box, rows) {
     .on('mousemove', (ev, d) => showTip(box, ev, `<div style="color:var(--cds-text-secondary)">${esc(d.data.segment)}</div><div>${fmtFull(d.data[F.ty()])} · ${d3.format('.1%')(d.data[F.ty()] / total)}</div>`)).on('mouseleave', () => hideTip(box));
   const lab = d3.arc().innerRadius(R * 0.6).outerRadius(R * 0.6);
   g.selectAll('.pl').data(arcs.filter((d) => d.endAngle - d.startAngle > 0.42)).join('text').attr('transform', (d) => `translate(${lab.centroid(d)})`).attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', 'var(--color-fg)')
-    .selectAll('tspan').data((d) => [d.data.segment, fmt(d.data[F.ty()]) + ' · ' + d3.format('.0%')(d.data[F.ty()] / total)]).join('tspan').attr('x', 0).attr('dy', (s, i) => i ? 13 : -3).attr('font-weight', (s, i) => i ? 400 : 600).text((s) => s);
+    .selectAll('tspan').data((d) => [d.data.segment, fmt(d.data[F.ty()]) + ' (' + d3.format('.1%')(d.data[F.ty()] / total) + ')']).join('tspan').attr('x', 0).attr('dy', (s, i) => i ? 13 : -3).attr('font-weight', (s, i) => i ? 400 : 600).text((s) => s);
   const leg = svg.append('g').attr('transform', `translate(4,${Math.max(6, h / 2 - arcs.length * 8)})`);
-  arcs.forEach((d, i) => { const row = leg.append('g').attr('transform', `translate(0,${i * 16})`); row.append('rect').attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', dash.colors[i % dash.colors.length]); row.append('text').attr('x', 15).attr('y', 9).attr('font-size', 11).attr('fill', 'var(--color-fg)').text(`${d.data.segment}  ${fmt(d.data[F.ty()])} · ${d3.format('.1%')(d.data[F.ty()] / total)}`); });
+  arcs.forEach((d, i) => { const row = leg.append('g').attr('transform', `translate(0,${i * 16})`); row.append('rect').attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', dash.colors[i % dash.colors.length]); row.append('text').attr('x', 15).attr('y', 9).attr('font-size', 11).attr('fill', 'var(--color-fg)').text(`${d.data.segment}  ${fmt(d.data[F.ty()])} (${d3.format('.1%')(d.data[F.ty()] / total)})`); });
 }
 
 /* table: this year, last year, change, trend; key cell carries the raw name */
 function table(tbl, rows, key, limit) {
-  const r2 = sel(rows).filter((r) => limit == null || r.rank <= limit).slice().sort((a, b) => b[F.ty()] - a[F.ty()]);
+  const byChg = tbl.dataset.sort === 'chg';
+  const r2 = sel(rows).filter((r) => limit == null || r.rank <= limit).slice().sort((a, b) => byChg ? b[F.chg()] - a[F.chg()] : b[F.ty()] - a[F.ty()]);
   tbl.querySelector('.h-ty').dataset.field = F.ty(); tbl.querySelector('.h-ly').dataset.field = F.ly(); tbl.querySelector('.h-chg').dataset.field = F.chg(); tbl.querySelector('.h-pct').dataset.field = F.pct();
   const tb = tbl.querySelector('tbody'); tb.innerHTML = '';
   for (const r of r2) { const tr = document.createElement('tr'); tr.dataset.key = r[key];
-    const cells = [r[key], fmtFull(r[F.ty()]), fmtFull(r[F.ly()]), fmtS(r[F.chg()]), r[F.ly()] === 0 ? 'New' : pct(r[F.pct()])];
+    const cells = [r[key], fmtFull(r[F.ty()]), fmtFull(r[F.ly()]), fmtFullS(r[F.chg()]), r[F.ly()] === 0 ? 'New' : pct(r[F.pct()])];
     cells.forEach((c, i) => { const td = document.createElement('td'); td.textContent = c; if (i === 3 || i === 4) td.className = (r[F.chg()] < 0 ? 'down' : 'up'); tr.appendChild(td); });
     tb.appendChild(tr); }
+  if (r2.length) { // Total of the rows shown, as the report's table does
+    const ty = d3.sum(r2, (r) => r[F.ty()]), ly = d3.sum(r2, (r) => r[F.ly()]), chg = ty - ly;
+    const tr = document.createElement('tr'); tr.className = 'total';
+    ['Total', fmtFull(ty), fmtFull(ly), fmtFullS(chg), ly ? pct(chg / ly) : 'n/a'].forEach((c, i) => { const td = document.createElement('td'); td.textContent = c; if (i === 3 || i === 4) td.className = chg < 0 ? 'down' : 'up'; tr.appendChild(td); });
+    tb.appendChild(tr); }
+}
+
+/* supplier chart as the report draws it: the two majors on their own scale, then ranks 3–10 on theirs */
+function groupedBarsSplit(box, rows, nameKey) {
+  box.innerHTML = '';
+  const top = rows.slice(0, 2), rest = rows.slice(2, 10);
+  for (const [cap, part] of [['majors — own scale', top], ['ranked 3–10 — own scale', rest]]) {
+    if (!part.length) continue;
+    const c = document.createElement('div'); c.className = 'split-cap'; c.textContent = cap; box.appendChild(c);
+    const sub = document.createElement('div'); sub.className = 'rel'; box.appendChild(sub);
+    groupedBars(sub, part, nameKey);
+  }
 }
 
 /* ---------- controls ---------- */
 const $ = (s, root) => (root || document).querySelector(s), $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 $$('.m-btn').forEach((b) => b.addEventListener('click', () => { state.metric = b.dataset.metric; dash.setParams({ metric: state.metric }); }));
 $$('.w-btn').forEach((b) => b.addEventListener('click', () => { state.wh = b.dataset.wh; dash.setParams({ wh: state.wh }); }));
-const PAGE_TITLES = { 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD Sales by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
+const PAGE_TITLES = { 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
 $$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; $('#title').textContent = PAGE_TITLES[state.page] || b.textContent; $('.sdt').dataset.scope = state.page.startsWith('mtd') ? 'mtd' : 'ytd'; dash.setLink(state.page); dash.setParams({ page: state.page }); }));
 { const named = location.hash.slice(1); if (named && document.getElementById(named)) state.page = named; }
 
@@ -628,12 +651,12 @@ dash.onData(() => {
   $$('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.page === state.page));
   $$('.page').forEach((s) => { s.hidden = s.id !== state.page; });
   $$('.mname').forEach((e) => e.textContent = mname()); $$('.mshort').forEach((e) => e.textContent = mname());
-  $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}${e.closest('#ytd-pqd') ? ' by PQD' : ''}`);
-  $$('.ttl-mtd').forEach((e) => e.textContent = `MTD ${mname()} by PQD`);
-  $$('.ttl-trend').forEach((e) => e.textContent = `Monthly ${mname()} trend by PQD`);
+  $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}`);
+  $$('.ttl-mtd').forEach((e) => e.textContent = `MTD ${mname()}`);
+  $$('.ttl-trend').forEach((e) => e.textContent = `Monthly ${isGP() ? 'Gross profit ($)' : 'Volume (CEs)'} trend`);
   $$('.ttl-daily').forEach((e) => e.textContent = `Daily ${mname()} — this year vs last year`);
-  $$('.ttl-mtdchg').forEach((e) => e.textContent = `MTD ${isGP() ? 'gross profit change ($)' : 'volume change (CEs)'} vs last year by PQD`);
-  $$('.ttl-ytdchg').forEach((e) => e.textContent = `YTD ${isGP() ? 'gross profit change ($)' : 'volume change (CEs)'} vs last year`);
+  $$('.ttl-mtdchg').forEach((e) => e.textContent = `MTD ${isGP() ? 'gross profit change ($)' : 'volume change (CEs)'}`);
+  $$('.ttl-ytdchg').forEach((e) => e.textContent = `YTD ${isGP() ? 'gross profit change ($)' : 'volume change (CEs)'}`);
   $$('.sw-ty').forEach((e) => e.style.background = TY); $$('.sw-ly').forEach((e) => e.style.background = LY);
 
   // windows
@@ -645,6 +668,7 @@ dash.onData(() => {
     $$('.mtdwin2').forEach((e) => e.textContent = `${mdy(W.mtd_start)} – ${mdy(W.mtd_end)}`); $$('.pymtdwin2').forEach((e) => e.textContent = `${mdy(W.py_mtd_start)} – ${mdy(W.py_mtd_end)}`);
     $$('.subwin').forEach((e) => { if (e.textContent === '—') e.textContent = `${mdy(W.ytd_start)} – ${mdy(W.ytd_end)} vs ${mdy(W.py_ytd_start)} – ${mdy(W.py_ytd_end)}`; });
     $$('.mtdnote').forEach((e) => e.textContent = `${mdy(W.mtd_start)} – ${mdy(W.mtd_end)} vs ${mdy(W.py_mtd_start)} – ${mdy(W.py_mtd_end)}`);
+    $$('.mtdnote-wd').forEach((e) => e.textContent = `${mdy(W.mtd_start)} – ${mdy(W.mtd_end)} vs the same weekdays in ${W.py_mtd_start.slice(0, 4)}`);
     $$('[data-source=windows][data-field]:not(.asof)').forEach((e) => { e.textContent = W[e.dataset.field]; });
   }
   // tiles
@@ -672,10 +696,10 @@ dash.onData(() => {
   if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd')); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of)); }
   if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily));
   if (page === 'mtd-pqd' && byPqd) { draw('c-pqd-mtd', (b) => groupedBars(b, pqdRows('MTD'), 'pqd')); draw('c-pqd-mtdchg', (b) => changeBars(b, pqdRows('MTD'), 'pqd', true)); }
-  if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBars(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'supplier')); table($('#tb-sup'), sup, 'supplier', 20); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true)); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false)); }
+  if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBarsSplit(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'supplier')); table($('#tb-sup'), sup, 'supplier', 20); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true)); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false)); }
   if (page === 'ytd-brand' && bf) { draw('c-bf-bar', (b) => groupedBars(b, sel(bf).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'brand_family')); table($('#tb-bf'), bf, 'brand_family', 20); draw('c-bf-up', (b) => movers(b, sel(bf), 'brand_family', true)); draw('c-bf-down', (b) => movers(b, sel(bf), 'brand_family', false)); }
   if (page === 'ytd-segment' && seg) { draw('c-seg-bar', (b) => groupedBars(b, sel(seg), 'segment')); draw('c-seg-pie', (b) => pieChart(b, seg)); table($('#tb-seg'), seg, 'segment', null); draw('c-seg-chg', (b) => changeBars(b, sel(seg), 'segment', false)); }
-  if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty).slice(0, 10), 'chain')); table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true)); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false)); }
+  if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty).slice(0, 10), 'chain')); table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true, (r) => r.is_chain)); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false, (r) => r.is_chain)); }
   // failed sources
   $$('.chart').forEach((box) => { const ids = (box.dataset.source || '').split(' '); if (ids.some((id) => dash.data(id).status === 'error')) { box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:80px;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)"><span style="width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad);display:inline-block"></span>Failed to load</div>'; } });
   if (!drawn && byPqd) { drawn = true; const named = document.getElementById(location.hash.slice(1)); if (named) named.scrollIntoView(); }
