@@ -23,6 +23,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 #dash-root { margin: 0; padding: 0; max-width: none; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div id="dash-root">
@@ -123,6 +124,35 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
   .sed .foot { color: var(--color-fg-muted); font-size: 11px; margin-top: var(--cds-gap-lg); }
   .sed .foot[hidden] { display: none; }
+  /* ---- home tableau ---- */
+  .sed .tabs .home-tab { border-bottom: 1px solid rgba(255,255,255,.15); margin-bottom: 8px; }
+  .sed .share { background: #f7f8fb; }
+  .sed .share .share-body { display: flex; gap: 14px; align-items: flex-start; }
+  .sed .share .share-qr { flex: 0 0 auto; background: #fff; padding: 6px; border: 1px solid var(--color-border-line); }
+  .sed .share .share-qr img, .sed .share .share-qr canvas { display: block; width: 112px; height: 112px; }
+  .sed .share .share-url { color: var(--steel); font-weight: 700; text-decoration: none; font-family: Consolas, Menlo, monospace; font-size: 12px; word-break: break-all; }
+  .sed .share .share-copy { font: inherit; font-size: 11px; font-weight: 700; background: var(--steel); color: #fff; border: 0; border-radius: 3px; padding: 5px 12px; cursor: pointer; }
+  .sed .share .share-ok { color: var(--color-ok); font-weight: 700; font-size: 11px; margin-left: 8px; }
+  .sed .home-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; }
+  .sed .rep { display: flex; flex-direction: column; color: inherit; text-decoration: none; cursor: pointer; transition: box-shadow .15s, transform .15s; }
+  .sed .rep:hover { box-shadow: 0 4px 14px rgba(0,0,0,.14); transform: translateY(-1px); }
+  .sed .rep > h2 { display: flex; justify-content: space-between; align-items: center; }
+  .sed .rep > h2 .open { font-weight: 400; font-size: 11px; color: var(--steel); }
+  .sed .rep .hl { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 6px; flex-wrap: wrap; }
+  .sed .rep .hl .big { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .sed .rep .hl .sm { font-size: 12px; font-weight: 700; }
+  .sed .rep .hl .lbl { font-size: 11px; color: var(--color-fg-muted); width: 100%; }
+  .sed .rep .mini { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+  #home .zoomer { display: none; }
+  .sed .rep .mini .cap { font-size: 10px; color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .4px; margin: 6px 0 3px; }
+  .sed .rep .mrow { display: grid; grid-template-columns: minmax(0, 1fr) 2fr auto; gap: 8px; align-items: center; font-size: 11px; padding: 3px 0; }
+  .sed .rep .mrow .mn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sed .rep .mrow .mb { height: 11px; background: #eee; border-radius: 2px; overflow: hidden; }
+  .sed .rep .mrow .mb i { display: block; height: 100%; background: var(--steel-bar); }
+  .sed .rep .mrow .mv { white-space: nowrap; font-weight: 700; }
+  .sed .rep .mrow .mv em { font-style: italic; font-weight: 400; color: var(--color-fg-muted); }
+  @media (max-width: 1400px) { .sed .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .sed .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   /* room for the zoom pill on the page's top header bar */
   .sed .tiles .strip-head { padding-right: 122px; }
   .sed .page > .grid > *:last-child > .card:first-child > h2, .sed .page > .grid > .card:last-child > h2 { padding-right: 122px; }
@@ -133,7 +163,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   <div class="brand"><div class="big">REDWOOD</div><div class="small">BEVERAGES</div></div>
   <div class="side-title">SED Sales Reporting Dashboard</div>
 <div class="tabs" role="tablist">
-  <button role="tab" data-page="ytd-pqd" aria-selected="true">YTD by PQD</button>
+  <button role="tab" data-page="home" aria-selected="true" class="home-tab">&#8962;&nbsp; Home</button>
+  <button role="tab" data-page="ytd-pqd" aria-selected="false">YTD by PQD</button>
   <button role="tab" data-page="mtd-day" aria-selected="false">MTD by Day</button>
   <button role="tab" data-page="mtd-pqd" aria-selected="false">MTD by PQD</button>
   <button role="tab" data-page="ytd-supplier" aria-selected="false">YTD by Supplier</button>
@@ -145,7 +176,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <main class="main">
 <div class="band">
   <div>
-    <h1 id="title">YTD Sales by PQD</h1>
+    <h1 id="title">SED Sales Reporting — Home</h1>
     <div class="sub">'26 vs same period. '25 ~ <b>Source:</b> Snowflake (SED_DB)</div>
   </div>
   <div class="public-note">Loading…</div>
@@ -162,6 +193,13 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
     </div>
   </div>
 </div>
+
+<!-- ===== Home: one card per report ===== -->
+<section class="page" id="home">
+  <div class="grid home-grid" id="home-grid"></div>
+  <template id="share-card"><div class="card share"><h2>Share this dashboard</h2>
+    <div class="share-body"><div class="share-qr" id="share-qr"></div><div class="share-txt"><a class="share-url" href="https://tinyurl.com/execreports-alternative">tinyurl.com/execreports-alternative</a><p class="note">Short link to this site — paste it in an email or Teams, or scan the code from a screen.</p><button class="share-copy" type="button">Copy link</button><span class="share-ok" hidden>Copied</span></div></div></div></template>
+</section>
 
 <!-- ===== YTD by PQD ===== -->
 <section class="page" id="ytd-pqd">
@@ -326,7 +364,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <script>
 /* ---- standalone runtime: stands in for the hosted dashboard's `dash` object ---- */
 window.sedBoot = function () {
-  const D = window.__SED_DATA, calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: 'ytd-pqd' }, listeners = [];
+  const D = window.__SED_DATA, calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: 'home' }, listeners = [];
   const compute = (id) => { const c = calcs[id]; if (!c) return; results[id] = c.fn(...c.inputs.map((i) => (D[i] || results[i]))); };
   const dash = {
     colors: ['#3570a8', '#e67e22', '#2e9e6b', '#c0392b', '#8e44ad', '#16a085', '#d35400', '#7f8c8d'],
@@ -335,7 +373,7 @@ window.sedBoot = function () {
     loader: () => {},
     params: () => ({ ...params }),
     setParams: (p) => { Object.assign(params, p); listeners.forEach((f) => f()); },
-    resetParams: () => { Object.assign(params, { metric: 'ce', wh: 'ALL', page: 'ytd-pqd' }); listeners.forEach((f) => f()); },
+    resetParams: () => { Object.assign(params, { metric: 'ce', wh: 'ALL', page: 'home' }); listeners.forEach((f) => f()); },
     setLink: (name) => { try { history.replaceState(null, '', '#' + name); } catch (e) {} },
     refresh: () => {},
     onData: (f) => { listeners.push(f); f(); },
@@ -473,7 +511,7 @@ dash.calc('chain_top', { inputs: ['ytd_chain'], title: 'Top 20 chains YTD', desc
 <script>
 window.sedRender = function () {
 /* ---------- page state, formatting, drawing ---------- */
-const state = { metric: 'ce', wh: 'ALL', page: 'ytd-pqd' };
+const state = { metric: 'ce', wh: 'ALL', page: 'home' };
 const TY = dash.colors[0], LY = 'var(--cds-chart-muted)', UP = '#6fc38c', DOWN = '#e8a3a3';
 const labTspans = (t, val, pc, neg) => { t.text(''); t.append('tspan').attr('font-weight', 700).attr('fill', neg ? '#c0392b' : '#1f1f1f').text(val + ' '); t.append('tspan').attr('font-style', 'italic').attr('fill', '#6b6b6b').text('(' + pc + ')'); };
 const isGP = () => state.metric === 'gp';
@@ -679,6 +717,35 @@ function groupedBarsSplit(box, rows, nameKey, fillH) {
   subs.forEach((s) => groupedBars(s.sub, s.part, nameKey, fillH ? Math.max(0, avail * s.part.length / n) + 28 : undefined));
 }
 
+/* ---------- home: one card per report, headline + top rows, all from the same datasets the pages use ---------- */
+function homeCards(d) {
+  const grid = document.getElementById('home-grid'); if (!grid) return;
+  const topRows = (rows, key, n, keep) => rows ? sel(rows).filter((r) => (!keep || keep(r)) && r[F.ty()] > 0).sort((a, b) => b[F.ty()] - a[F.ty()]).slice(0, n) : [];
+  const movers = (rows, key, keep) => { const r2 = rows ? sel(rows).filter((r) => (r.rank == null || r.rank <= 20) && (!keep || keep(r))) : []; if (!r2.length) return null; const up = r2.reduce((a, b) => b[F.chg()] > a[F.chg()] ? b : a), dn = r2.reduce((a, b) => b[F.chg()] < a[F.chg()] ? b : a); return { up, dn, key }; };
+  const tot = (scope) => d.tot && d.tot.find((r) => r.scope === scope && r.wh === state.wh);
+  const mini = (cap, rows, key, val) => { if (!rows.length) return ''; const mx = d3.max(rows, (r) => val ? val(r) : r[F.ty()]) || 1; return `<div class="mini"><div class="cap">${esc(cap)}</div>` + rows.map((r) => { const v = val ? val(r) : r[F.ty()], p = r[F.ly()] ? (v - r[F.ly()]) / r[F.ly()] : null; return `<div class="mrow"><span class="mn" title="${esc(r[key])}">${esc(r[key])}</span><span class="mb"><i style="width:${(100 * v / mx).toFixed(1)}%"></i></span><span class="mv">${fmt(v)} <em>(${r[F.ly()] === 0 ? 'New' : pct(p)})</em></span></div>`; }).join('') + '</div>'; };
+  const hlTot = (scope, lbl) => { const t = tot(scope); return t ? `<div class="hl"><span class="big">${fmt(t[F.ty()])}</span><span class="sm ${t[F.chg()] < 0 ? 'down' : 'up'}">${fmtS(t[F.chg()])} (${pct(t[F.pct()])})</span><span class="lbl">${esc(lbl)}</span></div>` : '<div class="hl"><span class="big">—</span></div>'; };
+  const hlMov = (m, lbl) => m ? `<div class="hl"><span class="sm up">&#9650; ${esc(m.up[m.key])} ${fmtS(m.up[F.chg()])}</span><span class="sm down">&#9660; ${esc(m.dn[m.key])} ${fmtS(m.dn[F.chg()])}</span><span class="lbl">${esc(lbl)}</span></div>` : '<div class="hl"><span class="big">—</span></div>';
+  const win = d.W ? `${mdy(d.W.ytd_start)} – ${mdy(d.W.ytd_end)}` : '', mwin = d.W ? `${mdy(d.W.mtd_start)} – ${mdy(d.W.mtd_end)}` : '';
+  const dr = d.daily ? sel(d.daily).filter((r) => r[F.ty()] != null && r[F.ty()] !== 0) : [], last3 = dr.slice(-5).map((r) => ({ ...r, dlabel: mdy(r.date_ty) }));
+  const td = dr.length ? dr[dr.length - 1] : null;
+  const hlDay = td ? (() => { const c = td[F.ty()] - td[F.ly()], p = td[F.ly()] ? c / td[F.ly()] : null; return `<div class="hl"><span class="big">${fmt(td[F.ty()])}</span><span class="sm ${c < 0 ? 'down' : 'up'}">${fmtS(c)} (${pct(p)})</span><span class="lbl">Last complete day, ${mdy(td.date_ty)}, vs the same weekday last year</span></div>`; })() : '<div class="hl"><span class="big">—</span></div>';
+  const isChain = (r) => r.is_chain;
+  const cards = [
+    { id: 'ytd-pqd', title: 'YTD by PQD', body: hlTot('YTD', `YTD ${mname()}, ${win}, vs last year`) + mini('Top PQDs, YTD', topRows(d.byPqd && d.byPqd.filter((r) => r.scope === 'YTD'), 'pqd', 5), 'pqd') },
+    { id: 'mtd-day', title: 'MTD by Day', body: hlDay + mini('Latest selling days', last3, 'dlabel') },
+    { id: 'mtd-pqd', title: 'MTD by PQD', body: hlTot('MTD', `MTD ${mname()}, ${mwin}, vs last year`) + mini('Top PQDs, MTD', topRows(d.byPqd && d.byPqd.filter((r) => r.scope === 'MTD'), 'pqd', 5), 'pqd') },
+    { id: 'ytd-supplier', title: 'YTD by Supplier', body: hlMov(movers(d.sup, 'supplier'), 'Biggest YTD gain and decline among the top 20 suppliers') + mini('Top suppliers, YTD', topRows(d.sup, 'supplier', 5), 'supplier') },
+    { id: 'ytd-brand', title: 'YTD by Brand Family', body: hlMov(movers(d.bf, 'brand_family'), 'Biggest YTD gain and decline among the top 20 brand families') + mini('Top brand families, YTD', topRows(d.bf, 'brand_family', 5), 'brand_family') },
+    { id: 'ytd-segment', title: 'YTD by Market Segment', body: hlMov(movers(d.seg, 'segment'), 'Biggest YTD gain and decline by market segment') + mini('Largest segments, YTD', topRows(d.seg, 'segment', 5), 'segment') },
+    { id: 'ytd-chain', title: 'YTD by Chain', body: hlMov(movers(d.ch, 'chain', isChain), 'Biggest YTD gain and decline among the top 20 chains') + mini('Top chains, YTD', topRows(d.ch, 'chain', 5, isChain), 'chain') },
+  ];
+  grid.innerHTML = cards.map((c) => `<a class="card rep" href="#${c.id}" data-go="${c.id}"><h2>${esc(c.title)}<span class="open">Open report &#8250;</span></h2>${c.body}</a>`).join('');
+  grid.appendChild(document.getElementById('share-card').content.cloneNode(true));
+  const qr = document.getElementById('share-qr'); if (qr && window.QRCode) new QRCode(qr, { text: grid.querySelector('.share-url').href, width: 112, height: 112, correctLevel: QRCode.CorrectLevel.M });
+  grid.querySelector('.share-copy').addEventListener('click', async () => { const url = grid.querySelector('.share-url').href, ok = grid.querySelector('.share-ok'); try { await navigator.clipboard.writeText(url); } catch (err) {} ok.hidden = false; setTimeout(() => { ok.hidden = true; }, 1800); });
+}
+
 /* ---------- controls ---------- */
 const $ = (s, root) => (root || document).querySelector(s), $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
@@ -703,6 +770,7 @@ function fitPage(id) {
   const grid = sec.querySelector(':scope > .grid'); if (!grid) return out;
   const gap = parseFloat(getComputedStyle(grid).gap) || 12;
   const G = T - (grid.getBoundingClientRect().top - sec.getBoundingClientRect().top) / z - parseFloat(getComputedStyle(grid).marginBottom); // height left for the grid
+  if (id === 'home') { grid.style.minHeight = G + 'px'; return out; }
   const chrome = (card, box) => card.offsetHeight - box.offsetHeight; // header, subtitle, legend, padding around the chart
   for (const col of grid.children) {
     const cards = col.classList.contains('card') ? [col] : [...col.querySelectorAll(':scope > .card')];
@@ -729,8 +797,10 @@ $$('.page').forEach((sec) => {
 });
 $$('.m-btn').forEach((b) => b.addEventListener('click', () => { state.metric = b.dataset.metric; dash.setParams({ metric: state.metric }); }));
 $$('.w-btn').forEach((b) => b.addEventListener('click', () => { state.wh = b.dataset.wh; dash.setParams({ wh: state.wh }); }));
-const PAGE_TITLES = { 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
-$$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; $('#title').textContent = PAGE_TITLES[state.page] || b.textContent; $('.sdt').dataset.scope = state.page.startsWith('mtd') ? 'mtd' : 'ytd'; dash.setLink(state.page); dash.setParams({ page: state.page }); }));
+const PAGE_TITLES = { 'home': 'SED Sales Reporting — Home', 'ytd-pqd': 'YTD Sales by PQD', 'mtd-day': 'MTD by Day', 'mtd-pqd': 'MTD Sales by PQD', 'ytd-supplier': 'YTD Sales by Supplier', 'ytd-brand': 'YTD Sales by Brand Family', 'ytd-segment': 'YTD Sales by Market Segment', 'ytd-chain': 'YTD Sales by Chain' };
+const goPage = (id) => { state.page = id; const tab = $(`.tabs [data-page="${id}"]`); $('#title').textContent = PAGE_TITLES[id] || (tab ? tab.textContent : id); $('.sdt').dataset.scope = id.startsWith('mtd') ? 'mtd' : 'ytd'; dash.setLink(id); dash.setParams({ page: id }); };
+$$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => goPage(b.dataset.page)));
+$('#home-grid').addEventListener('click', (e) => { const a = e.target.closest('.rep'); if (a) { e.preventDefault(); goPage(a.dataset.go); } });
 { const named = location.hash.slice(1); if (named && document.getElementById(named)) state.page = named; }
 
 /* ---------- draw everything ---------- */
@@ -741,7 +811,8 @@ dash.onData(() => {
   $$('.w-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.wh === state.wh));
   $$('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.page === state.page));
   $$('.page').forEach((s) => { s.hidden = s.id !== state.page; });
-  { const f = $('.foot'); if (f) f.hidden = state.page !== 'ytd-pqd'; } // the method note shows on the first page only
+  $('#title').textContent = PAGE_TITLES[state.page] || state.page;
+  { const f = $('.foot'); if (f) f.hidden = !(state.page === 'home' || state.page === 'ytd-pqd'); } // the method note shows on Home and the first report only
   $$('.mname').forEach((e) => e.textContent = mname()); $$('.mshort').forEach((e) => e.textContent = mname());
   const sfx = (e) => e.dataset.suffix ? ` — ${e.dataset.suffix}` : ''; // tells same-named cards on a page apart
   $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}` + sfx(e));
@@ -791,6 +862,7 @@ dash.onData(() => {
   if (page === 'ytd-brand' && bf) table($('#tb-bf'), bf, 'brand_family', 20);
   if (page === 'ytd-segment' && seg) table($('#tb-seg'), seg, 'segment', null);
   if (page === 'ytd-chain' && ch) table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20);
+  if (page === 'home') homeCards({ W, tot, byPqd, daily, sup, bf, seg, ch });
   const fill = fitPage(page); // chart box id -> height that makes every column end on the same line
   if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd', fill['c-pqd-ytd'])); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of, fill['c-trend'])); }
   if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily, fill['c-daily']));
