@@ -177,10 +177,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 
 <!-- ===== MTD by PQD ===== -->
 <section class="page" id="mtd-pqd" hidden>
-  <div class="tiles three"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng"><span class="mtdwin2">—</span> vs <span class="pymtdwin2">—</span></span></div>
-    <div class="card tile"><div class="k">Current MTD</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d"><span class="mtdwin2">—</span> · <span data-source="windows" data-field="selling_days_mtd" data-row="0">—</span> vs <span data-source="windows" data-field="selling_days_py_mtd" data-row="0">—</span> selling days</div></div>
-    <div class="card tile"><div class="k">Last year, same days</div><div class="v" data-source="tot" data-field="ce_ly" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d pymtdwin2">—</div></div>
-    <div class="card tile"><div class="k">Change <span class="eq">(current − last)</span></div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div><div class="d" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+  <div class="tiles three"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng mtdwin2">—</span></div>
+    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+    <div class="card tile"><div class="k">Change</div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+    <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
   <div class="grid">
     <div class="card"><h2 class="ttl-mtd">MTD volume (CEs) by PQD</h2><p class="note mtdnote">—</p>
