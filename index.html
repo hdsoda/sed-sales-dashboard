@@ -18,7 +18,7 @@
   --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12); --cds-text-secondary: #6b6b6b; --cds-dur-slow: .3s;
 }
 html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
-.sed th, .sed td { padding: 4px 5px !important; }
+.sed th, .sed td { padding: 3px 5px !important; }
 .sed .tbox table { table-layout: auto; }
 #dash-root { margin: 0; padding: 0; max-width: none; }
 .public-note { font-size: 11px; color: var(--color-fg-muted); text-align: right; margin: 6px 0 0 0; }
@@ -43,7 +43,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .tabs button:hover { background: rgba(255,255,255,.06); }
   .sed .tabs button[aria-selected="true"] { background: rgba(255,255,255,.12); border-left-color: #fff; color: #fff; font-weight: 600; }
   /* ---- main ---- */
-  .sed .main { padding: 14px 18px 32px; min-width: 0; }
+  .sed .main { padding: 12px 18px 14px; min-width: 0; }
   .sed .band { background: var(--steel); color: #fff; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 10px 16px; border: 1px solid #2a5078; }
   .sed .band h1 { font-family: var(--font-anthropic-sans); font-size: 20px; font-weight: 700; margin: 0; }
   .sed .band .sub { color: #dbe6f2; font-size: 11px; font-style: italic; margin-top: 3px; }
@@ -591,7 +591,7 @@ function dailyChart(box, rows) {
 function pieChart(box, rows) {
   /* report style: large slices carry their label inside (white), small ones are labelled outside on leader lines */
   const PIE = { 'INDY C-STORE': '#118dff', 'CHAIN C-STORE': '#12239e', 'GROCERY': '#e66c37', 'LIQUOR': '#6b007b', 'DRUG': '#e044a7', 'OTHER': '#744ec2', 'ON-PREMISE': '#d9b300', 'NON-RETAIL': '#d64550' };
-  const w = Math.max(320, box.clientWidth), h = 430, cx = w * 0.6, cy = h / 2 + 4, R = Math.min(h / 2 - 28, w * 0.31), svg = svgIn(box, w, h);
+  const w = Math.max(320, box.clientWidth), h = 340, cx = w * 0.6, cy = h / 2 + 2, R = Math.min(h / 2 - 22, w * 0.31), svg = svgIn(box, w, h);
   const r2 = sel(rows).filter((r) => r[F.ty()] > 0), total = d3.sum(r2, (r) => r[F.ty()]);
   const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R), inner = d3.arc().innerRadius(R * 0.55).outerRadius(R * 0.55);
   const color = (d, i) => PIE[d.data.segment] || dash.colors[i % dash.colors.length];
@@ -614,6 +614,7 @@ function pieChart(box, rows) {
     const L = labs.filter((l) => l.right === side).sort((a, b) => a.y - b.y);
     for (let i = 1; i < L.length; i++) if (L[i].y - L[i - 1].y < gap) L[i].y = L[i - 1].y + gap;
     const maxY = cy - 18; for (let i = L.length - 1; i >= 0; i--) { if (L[i].y > maxY) L[i].y = maxY; if (i < L.length - 1 && L[i + 1].y - L[i].y < gap) L[i].y = L[i + 1].y - gap; }
+    const minY = -cy + 16; for (let i = 0; i < L.length; i++) { if (L[i].y < minY) L[i].y = minY; if (i > 0 && L[i].y - L[i - 1].y < gap) L[i].y = L[i - 1].y + gap; }
   }
   const maxTxt = d3.max(labs, (l) => Math.max(textW(svg, l.d.data.segment, 11), textW(svg, fmt(l.d.data[F.ty()]) + ' (' + share(l.d) + ')', 12))) || 60;
   const tx = (l) => (l.right ? 1 : -1) * Math.max(R + 26, Math.min(labR + 40, (l.right ? w - cx : cx) - maxTxt - 6));
