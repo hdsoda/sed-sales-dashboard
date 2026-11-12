@@ -70,7 +70,13 @@ function windowsFrom(daily, today) {
   const w = { as_of: lcd, ytd_start: ymd(y, 1, 1), ytd_end: lcd, py_ytd_start: ymd(py, 1, 1), py_ytd_end: py_end,
     mtd_start: ymd(y, m, 1), mtd_end: lcd, py_mtd_start: ymd(py, pm, 1), py_mtd_end: py_end };
   w.selling_days_ytd = String(sellingDays(w.ytd_start, w.ytd_end)); w.selling_days_py_ytd = String(sellingDays(w.py_ytd_start, w.py_ytd_end));
-  w.selling_days_mtd = String(sellingDays(w.mtd_start, w.mtd_end)); w.selling_days_py_mtd = String(sellingDays(w.py_mtd_start, w.py_mtd_end));
+  // MTD selling days follow the Power BI report's [Anchor Date] (today, Houston; _lag = 0): weekdays from the 1st of the
+  // month through TODAY minus holidays, and the same calendar window one year back. The MTD totals still end on the
+  // last complete day; this count intentionally matches the report (9 vs 8 on 11/12/2026, not 8 vs 7).
+  const anchor = today, py_anchor = minus12Months(today);
+  w.anchor = anchor;
+  w.selling_days_mtd = String(sellingDays(ymd(+anchor.slice(0, 4), +anchor.slice(5, 7), 1), anchor));
+  w.selling_days_py_mtd = String(sellingDays(ymd(+py_anchor.slice(0, 4), +py_anchor.slice(5, 7), 1), py_anchor));
   return w;
 }
 
