@@ -83,7 +83,14 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .grid.one { grid-template-columns: 1fr; }
   /* ---- cards: white body, gray header bar ---- */
   .sed .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 2px; padding: 0 10px 10px; min-width: 0; }
-  .sed .card > h2 { background: var(--panel-head); font-size: 13px; font-weight: 700; margin: 0 -10px 8px; padding: 7px 10px 6px; }
+  .sed .card > h2 { background: var(--panel-head); font-size: 13px; font-weight: 700; margin: 0 -10px 8px; padding: 7px 10px 6px; display: flex; align-items: center; gap: 8px; }
+  /* per-card download: CSV / Excel of the rows behind the chart or table */
+  .sed .dl { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; font-weight: 400; font-size: 10px; color: #6b7280; white-space: nowrap; }
+  .sed .dl::before { content: '\2913'; font-size: 11px; margin-right: 3px; color: #8a93a3; }
+  .sed .dl button { font: inherit; font-size: 10px; font-weight: 700; color: var(--steel); background: #fff; border: 1px solid #c9ccd8; border-radius: 3px; padding: 1px 6px; cursor: pointer; line-height: 1.4; }
+  .sed .dl button:hover { background: var(--steel); color: #fff; border-color: var(--steel); }
+  .sed .strip-head .dl { margin-left: 0; }
+  .sed .strip-head { gap: 10px; }
   .sed .card > h2 + .note { background: var(--panel-head); margin: -8px -10px 8px; padding: 0 10px 6px; }
   .sed .card .note { color: var(--color-fg-muted); font-size: 11px; margin: 0 0 var(--cds-gap-sm) 0; }
   /* ---- KPI summary strip ---- */
@@ -232,7 +239,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== MTD by Day ===== -->
 <section class="page" id="mtd-day" hidden>
   <div class="tiles three"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng mtdwin2">—</span></div>
-    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL" id="t-mtd-ty">—</div></div>
     <div class="card tile"><div class="k">Change</div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div></div>
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
@@ -246,7 +253,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <!-- ===== MTD by PQD ===== -->
 <section class="page" id="mtd-pqd" hidden>
   <div class="tiles three"><div class="strip-head"><span>MTD summary — <span class="mname">volume (CEs)</span></span><span class="rng mtdwin2">—</span></div>
-    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL">—</div></div>
+    <div class="card tile"><div class="k">Vol</div><div class="v" data-source="tot" data-field="ce_ty" data-where="scope=MTD&amp;wh=ALL" id="t-mtd2-ty">—</div></div>
     <div class="card tile"><div class="k">Change</div><div class="v" data-source="tot" data-field="ce_chg" data-where="scope=MTD&amp;wh=ALL">—</div></div>
     <div class="card tile"><div class="k">Trend</div><div class="v" data-source="tot" data-field="ce_pct" data-where="scope=MTD&amp;wh=ALL" data-plain="1">—</div></div>
   </div>
@@ -803,6 +810,51 @@ function homeCards(d) {
   grid.querySelector('.share-copy').addEventListener('click', async () => { const url = grid.querySelector('.share-url').href, ok = grid.querySelector('.share-ok'); try { await navigator.clipboard.writeText(url); } catch (err) {} ok.hidden = false; setTimeout(() => { ok.hidden = true; }, 1800); });
 }
 
+/* ---------- downloads: every chart and table registers the rows it was drawn from; the buttons in its header write CSV or Excel ---------- */
+const EXPORTS = new WeakMap();
+const XCOL = {
+  dim: (key, label) => [[key, label], ['ce_ty', 'Volume TY (CEs)'], ['ce_ly', 'Volume LY (CEs)'], ['ce_chg', 'Volume change (CEs)'], ['ce_pct', 'Volume trend %'], ['gp_ty', 'Gross profit TY ($)'], ['gp_ly', 'Gross profit LY ($)'], ['gp_chg', 'Gross profit change ($)'], ['gp_pct', 'Gross profit trend %']],
+  tot: [['scope', 'Window'], ['ce_ty', 'Volume TY (CEs)'], ['ce_ly', 'Volume LY (CEs)'], ['ce_chg', 'Volume change (CEs)'], ['ce_pct', 'Volume trend %'], ['gp_ty', 'Gross profit TY ($)'], ['gp_ly', 'Gross profit LY ($)'], ['gp_chg', 'Gross profit change ($)'], ['gp_pct', 'Gross profit trend %']],
+  trend: [['pqd', 'PQD'], ['year', 'Year'], ['month', 'Month'], ['ce', 'Volume (CEs)'], ['gp', 'Gross profit ($)']],
+  daily: [['day', 'Day of month'], ['date_ty', 'Date'], ['date_ly', 'Same weekday last year'], ['ce_ty', 'Volume TY (CEs)'], ['ce_ly', 'Volume LY (CEs)'], ['gp_ty', 'Gross profit TY ($)'], ['gp_ly', 'Gross profit LY ($)']],
+};
+/** register the rows behind a chart box / table (by element id) so its header buttons can export them */
+function reg(id, title, rows, cols) { const el = document.getElementById(id); if (!el) return; const holder = el.closest('.tiles') || el.closest('.card'); if (holder && rows) EXPORTS.set(holder, { title, rows, cols }); }
+function addDlButtons() {
+  $$('.page:not(#home) .card > h2, .page .tiles .strip-head').forEach((hd) => {
+    if (hd.querySelector('.dl')) return;
+    const s = document.createElement('span'); s.className = 'dl'; s.title = 'Download the rows behind this visual';
+    s.innerHTML = '<button type="button" data-fmt="csv">CSV</button><button type="button" data-fmt="xlsx">Excel</button>'; hd.appendChild(s);
+  });
+}
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const dlBlob = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); };
+const isPct = (k) => /_pct$/.test(k), num = (v) => (v == null || v === '' || isNaN(v)) ? null : Number(v);
+function exportCsv(x, name) {
+  const q = (s) => /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  const lines = [x.cols.map((c) => q(c[1])).join(',')];
+  for (const r of x.rows) lines.push(x.cols.map(([k]) => { const v = r[k]; if (v == null) return ''; const n = num(v); if (n == null) return q(String(v)); return isPct(k) ? (n * 100).toFixed(2) : (Number.isInteger(n) ? String(n) : n.toFixed(2)); }).join(','));
+  dlBlob(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), name + '.csv');
+}
+let xlsxLoading = null;
+const loadXlsx = () => window.XLSX ? Promise.resolve() : (xlsxLoading || (xlsxLoading = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = res; s.onerror = () => rej(new Error('could not load the Excel writer')); document.head.appendChild(s); })));
+async function exportXlsx(x, name) {
+  await loadXlsx();
+  const aoa = [x.cols.map((c) => c[1])].concat(x.rows.map((r) => x.cols.map(([k]) => { const v = r[k]; const n = num(v); return n == null ? (v == null ? '' : String(v)) : n; })));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let c = 0; c <= range.e.c; c++) { const k = x.cols[c][0], fmt = isPct(k) ? '0.0%' : (/_(ty|ly|chg)$|^(ce|gp)$/.test(k) ? '#,##0' : null); if (!fmt) continue; for (let r = 1; r <= range.e.r; r++) { const cell = ws[XLSX.utils.encode_cell({ r, c })]; if (cell && typeof cell.v === 'number') cell.z = fmt; } }
+  ws['!cols'] = x.cols.map((c, i) => ({ wch: Math.max(c[1].length + 2, i === 0 ? 24 : 14) }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, x.title.slice(0, 31).replace(/[\\/?*\[\]:]/g, ' '));
+  XLSX.writeFile(wb, name + '.xlsx');
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('.dl button'); if (!b) return;
+  const holder = b.closest('.tiles') || b.closest('.card'), x = EXPORTS.get(holder); if (!x) { alert('Nothing to download yet — the data is still loading.'); return; }
+  const asOf = (rowsOf('windows') || [{}])[0].as_of || '', name = 'sed_' + slug(x.title) + (asOf ? '_' + asOf : '');
+  b.disabled = true; try { if (b.dataset.fmt === 'csv') exportCsv(x, name); else await exportXlsx(x, name); } catch (err) { alert('Download failed: ' + err.message); } finally { b.disabled = false; }
+});
+
 /* ---------- controls ---------- */
 const $ = (s, root) => (root || document).querySelector(s), $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
@@ -929,6 +981,20 @@ dash.onData(() => {
   if (page === 'ytd-segment' && seg) table($('#tb-seg'), seg, 'segment', null);
   if (page === 'ytd-chain' && ch) table($('#tb-ch'), ch.filter((r) => r.is_chain), 'chain', 20);
   if (page === 'home') homeCards({ W, tot, byPqd, daily, sup, bf, seg, ch });
+  addDlButtons();
+  // what each visual exports (the rows it is drawn from, both metrics side by side)
+  const top10 = (rows, keep) => rows ? sel(rows).filter((r) => r.rank <= 10 && (!keep || keep(r))).sort((a, b) => b.ce_ty - a.ce_ty).slice(0, 10) : null;
+  const top20 = (rows, keep) => rows ? sel(rows).filter((r) => r.rank <= 20 && (!keep || keep(r))).sort((a, b) => a.rank - b.rank) : null;
+  const gain = (rows, keep) => rows ? sel(rows).filter((r) => !keep || keep(r)).sort((a, b) => b[F.chg()] - a[F.chg()]).slice(0, 5) : null;
+  const drop = (rows, keep) => rows ? sel(rows).filter((r) => !keep || keep(r)).sort((a, b) => a[F.chg()] - b[F.chg()]).slice(0, 5) : null;
+  if (tot) { reg('t-ytd-ty', 'YTD summary', sel(tot).filter((r) => r.scope === 'YTD'), XCOL.tot); reg('t-mtd-ty', 'MTD summary', sel(tot).filter((r) => r.scope === 'MTD'), XCOL.tot); reg('t-mtd2-ty', 'MTD summary', sel(tot).filter((r) => r.scope === 'MTD'), XCOL.tot); }
+  if (byPqd) { reg('c-pqd-ytd', 'YTD by PQD', pqdRows('YTD'), XCOL.dim('pqd', 'PQD')); reg('c-pqd-mtd', 'MTD by PQD', pqdRows('MTD'), XCOL.dim('pqd', 'PQD')); reg('c-pqd-mtdchg', 'MTD change by PQD', pqdRows('MTD'), XCOL.dim('pqd', 'PQD')); }
+  if (trend) reg('c-trend', 'Monthly trend by PQD', sel(trend).slice().sort((a, b) => a.pqd.localeCompare(b.pqd) || a.year - b.year || a.month - b.month), XCOL.trend);
+  if (daily) reg('c-daily', 'MTD by day', sel(daily), XCOL.daily);
+  if (sup) { const C = XCOL.dim('supplier', 'Supplier'); reg('c-sup-bar', 'YTD top 10 suppliers', top10(sup), C); reg('tb-sup', 'YTD top 20 suppliers', top20(sup), C); reg('c-sup-up', 'YTD top 5 gainers suppliers', gain(sup), C); reg('c-sup-down', 'YTD bottom 5 decliners suppliers', drop(sup), C); }
+  if (bf) { const C = XCOL.dim('brand_family', 'Brand family'); reg('c-bf-bar', 'YTD top 10 brand families', top10(bf), C); reg('tb-bf', 'YTD top 20 brand families', top20(bf), C); reg('c-bf-up', 'YTD top 5 gainers brand families', gain(bf), C); reg('c-bf-down', 'YTD bottom 5 decliners brand families', drop(bf), C); }
+  if (seg) { const C = XCOL.dim('segment', 'Market segment'), sr = sel(seg); reg('c-seg-bar', 'YTD by market segment', sr, C); reg('c-seg-pie', 'YTD share by market segment', sr, C); reg('tb-seg', 'YTD market segment detail', sr.slice().sort((a, b) => b[F.chg()] - a[F.chg()]), C); reg('c-seg-chg', 'YTD change by market segment', sr, C); }
+  if (ch) { const C = XCOL.dim('chain', 'Chain'), isC = (r) => r.is_chain; reg('c-ch-bar', 'YTD top 10 chains', top10(ch, isC), C); reg('tb-ch', 'YTD top 20 chains', top20(ch, isC), C); reg('c-ch-up', 'YTD top 5 gainers chains', gain(ch, isC), C); reg('c-ch-down', 'YTD bottom 5 decliners chains', drop(ch, isC), C); }
   const fill = fitPage(page); // chart box id -> height that makes every column end on the same line
   if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd', fill['c-pqd-ytd'])); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of, fill['c-trend'])); }
   if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily, fill['c-daily']));
