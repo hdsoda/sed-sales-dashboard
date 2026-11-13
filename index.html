@@ -571,7 +571,7 @@ const textW = (svg, s, size) => { const t = svg.append('text').attr('font-size',
 /* grouped horizontal bars: this year vs last year, label = value (trend) */
 function groupedBars(box, rows, nameKey, fillH) {
   const rows2 = rows.filter((r) => r[F.ty()] > 0 || r[F.ly()] > 0);
-  const w = Math.max(320, box.clientWidth), rowH = fillH && rows2.length ? Math.max(34, (fillH - 28) / rows2.length) : (nameKey === 'pqd' ? 58 : 40);
+  const w = Math.max(320, box.clientWidth), rowH = fillH && rows2.length ? Math.max(20, (fillH - 28) / rows2.length) : (nameKey === 'pqd' ? 58 : 40);
   if (!rows2.length) { box.innerHTML = ''; return; }
   const h = rows2.length * rowH + 28;
   const svg = svgIn(box, w, h);
@@ -593,7 +593,7 @@ function groupedBars(box, rows, nameKey, fillH) {
 /* diverging change bars with names at the zero line */
 function changeBars(box, rows, nameKey, sortByChange, fillH) {
   let rows2 = rows.filter((r) => r[F.ty()] > 0 || r[F.ly()] > 0);
-  const w = Math.max(320, box.clientWidth), rowH = fillH && rows2.length ? Math.max(30, (fillH - 28) / rows2.length) : 36;
+  const w = Math.max(320, box.clientWidth), rowH = fillH && rows2.length ? Math.max(20, (fillH - 28) / rows2.length) : 36;
   if (sortByChange) rows2 = rows2.slice().sort((a, b) => b[F.chg()] - a[F.chg()]);
   if (!rows2.length) { box.innerHTML = ''; return; }
   const h = rows2.length * rowH + 28, svg = svgIn(box, w, h);
@@ -616,7 +616,7 @@ function changeBars(box, rows, nameKey, sortByChange, fillH) {
 function movers(box, rows, nameKey, up, keep, fillH) {
   const r2 = rows.filter((r) => r.rank <= 20 && (!keep || keep(r))).slice().sort((a, b) => up ? b[F.chg()] - a[F.chg()] : a[F.chg()] - b[F.chg()]).filter((r) => up ? r[F.chg()] > 0 : r[F.chg()] < 0).slice(0, 5);
   if (!r2.length) { box.innerHTML = '<p class="note">none</p>'; return; }
-  const w = Math.max(280, box.clientWidth), rowH = fillH ? Math.max(26, (fillH - 8) / r2.length) : 30, h = r2.length * rowH + 8, svg = svgIn(box, w, h);
+  const w = Math.max(280, box.clientWidth), rowH = fillH ? Math.max(18, (fillH - 8) / r2.length) : 30, h = r2.length * rowH + 8, svg = svgIn(box, w, h);
   const lab = (r) => fmtS(r[F.chg()]) + ' (' + (r[F.ly()] === 0 ? 'New' : pct(r[F.pct()])) + ')';
   const nameW = d3.max(r2, (r) => textW(svg, r[nameKey].slice(0, 18), 12)) + 10, labW = d3.max(r2, (r) => textW(svg, lab(r), 11)) + 8;
   const x = d3.scaleLinear([0, d3.max(r2, (r) => Math.abs(r[F.chg()])) || 1], [0, w - nameW - labW - 12]);
@@ -639,7 +639,7 @@ function trendPanels(box, trend, byPqd, asOf, fillH) {
   const w = Math.max(320, box.clientWidth);
   const tys = Number(asOf.slice(0, 4)), lastMonth = Number(asOf.slice(5, 7)) - 1; // last complete month this year
   const pqds = sel(byPqd).filter((r) => r.scope === 'YTD' && r.pqd !== 'THC').sort((a, b) => b.ce_ty - a.ce_ty).map((r) => r);
-  const cols = w > 560 ? 3 : 2, pw = (w - (cols - 1) * 12) / cols, rowsN = Math.ceil(pqds.length / cols), ph = fillH && rowsN ? Math.max(150, (fillH - (rowsN - 1) * 12) / rowsN) : 205, h = rowsN * (ph + 12) - 12;
+  const cols = w > 560 ? 3 : 2, pw = (w - (cols - 1) * 12) / cols, rowsN = Math.ceil(pqds.length / cols), ph = fillH && rowsN ? Math.max(80, (fillH - (rowsN - 1) * 12) / rowsN) : 205, h = rowsN * (ph + 12) - 12;
   const svg = svgIn(box, w, h); const m = { t: 34, r: 10, b: 20, l: 10 };
   pqds.forEach((p, i) => {
     const gx = (i % cols) * (pw + 12), gy = Math.floor(i / cols) * (ph + 12);
@@ -748,7 +748,7 @@ function groupedBarsSplit(box, rows, nameKey, fillH) {
     const sub = document.createElement('div'); sub.className = 'rel'; box.appendChild(sub); return { sub, part, cap: c };
   });
   // share the fill height between the two panels in proportion to their row counts (each panel carries 28px of axis)
-  const capH = d3.sum(subs, (s) => s.cap.offsetHeight), n = d3.sum(subs, (s) => s.part.length), avail = fillH ? fillH - capH - subs.length * 28 : 0;
+  const capH = d3.sum(subs, (s) => s.cap.offsetHeight), n = d3.sum(subs, (s) => s.part.length), avail = fillH ? fillH - capH - subs.length * 28 - 4 : 0; // 4px: the two sub-charts' inline-svg baselines
   subs.forEach((s) => groupedBars(s.sub, s.part, nameKey, fillH ? Math.max(0, avail * s.part.length / n) + 28 : undefined));
 }
 
