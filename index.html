@@ -819,7 +819,39 @@ const XCOL = {
   daily: [['day', 'Day of month'], ['date_ty', 'Date'], ['date_ly', 'Same weekday last year'], ['ce_ty', 'Volume TY (CEs)'], ['ce_ly', 'Volume LY (CEs)'], ['gp_ty', 'Gross profit TY ($)'], ['gp_ly', 'Gross profit LY ($)']],
 };
 /** register the rows behind a chart box / table (by element id) so its header buttons can export them */
-function reg(id, title, rows, cols) { const el = document.getElementById(id); if (!el) return; const holder = el.closest('.tiles') || el.closest('.card'); if (holder && rows) EXPORTS.set(holder, { title, rows, cols }); }
+function reg(id, title, rows, cols, kind, opts) { const el = document.getElementById(id); if (!el) return; const holder = el.closest('.tiles') || el.closest('.card'); if (holder && rows) EXPORTS.set(holder, { title, rows, cols, kind: kind || 'dim', key: cols[0][0], total: !!(opts && opts.total), holder }); }
+/* the "site view" of an export: the card's own title and subtitle, the columns the card shows for the metric in use, the site's number formats */
+function viewOf(x) {
+  const gp = isGP(), head = x.holder.querySelector('h2, .strip-head'), note = x.holder.querySelector('.note, .rng');
+  const title = head ? (head.classList.contains('strip-head') ? head.firstElementChild.textContent : head.childNodes[0].textContent).trim() : x.title, sub = note ? note.textContent.trim() : '';
+  const NUM = gp ? '"$"#,##0' : '#,##0', CHG = gp ? '+"$"#,##0;-"$"#,##0;0' : '+#,##0;-#,##0;0', PCT = '+0.0%;-0.0%;0.0%';
+  const scope = /mtd/i.test(x.title) ? 'MTD' : 'YTD';
+  let cols, rows, total = null;
+  if (x.kind === 'dim' || x.kind === 'tot') {
+    const label = x.kind === 'tot' ? 'Window' : x.cols[0][1];
+    cols = [{ h: label, w: 26 }, { h: 'This Year', f: NUM, w: 16 }, { h: 'Last Year', f: NUM, w: 16 }, { h: scope + ' Change', f: CHG, w: 16, c: true }, { h: 'Trend %', f: PCT, w: 11, c: true }];
+    rows = x.rows.map((r) => [r[x.key], num(r[F.ty()]), num(r[F.ly()]), num(r[F.chg()]), num(r[F.ly()]) === 0 ? 'New' : num(r[F.pct()])]);
+    if (x.total && rows.length) { const ty = d3.sum(rows, (r) => r[1] || 0), ly = d3.sum(rows, (r) => r[2] || 0); total = ['Total', ty, ly, ty - ly, ly ? (ty - ly) / ly : null]; }
+  } else if (x.kind === 'pie') {
+    const tot = d3.sum(x.rows, (r) => num(r[F.ty()]) || 0);
+    cols = [{ h: x.cols[0][1], w: 26 }, { h: 'This Year', f: NUM, w: 16 }, { h: 'Share %', f: '0.0%', w: 11 }, { h: 'Last Year', f: NUM, w: 16 }, { h: scope + ' Change', f: CHG, w: 16, c: true }, { h: 'Trend %', f: PCT, w: 11, c: true }];
+    rows = x.rows.map((r) => [r[x.key], num(r[F.ty()]), tot ? num(r[F.ty()]) / tot : null, num(r[F.ly()]), num(r[F.chg()]), num(r[F.pct()])]);
+    total = ['Total', tot, 1, d3.sum(x.rows, (r) => num(r[F.ly()]) || 0), null, null]; total[4] = total[1] - total[3]; total[5] = total[3] ? total[4] / total[3] : null;
+  } else if (x.kind === 'trend') {
+    const m = state.metric, pqds = [...new Set(x.rows.map((r) => r.pqd))], years = [...new Set(x.rows.map((r) => r.year))].sort(), ty = years[years.length - 1], ly = years[0];
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    cols = [{ h: 'Month', w: 10 }]; pqds.forEach((p) => { cols.push({ h: `${p} ${ty}`, f: NUM, w: 16 }); cols.push({ h: `${p} ${ly}`, f: NUM, w: 16 }); });
+    const at = (p, y, mo) => { const r = x.rows.find((r) => r.pqd === p && r.year === y && r.month === mo); return r ? num(r[m]) : null; };
+    rows = MON.map((mn, i) => [mn].concat(pqds.flatMap((p) => [at(p, ty, i + 1), at(p, ly, i + 1)])));
+    total = ['Total'].concat(pqds.flatMap((p) => [d3.sum(rows, (r) => r[1 + 2 * pqds.indexOf(p)] || 0), d3.sum(rows, (r) => r[2 + 2 * pqds.indexOf(p)] || 0)]));
+  } else if (x.kind === 'daily') {
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], wd = (s) => s ? WD[new Date(s + 'T00:00:00').getDay()] : '';
+    cols = [{ h: 'Day', w: 8 }, { h: 'Date', w: 14 }, { h: 'This Year', f: NUM, w: 16 }, { h: 'Same weekday LY', w: 16 }, { h: 'Last Year', f: NUM, w: 16 }, { h: 'Change', f: CHG, w: 16, c: true }, { h: 'Trend %', f: PCT, w: 11, c: true }];
+    rows = x.rows.map((r) => { const t = num(r[F.ty()]), l = num(r[F.ly()]); return [wd(r.date_ty), mdy(r.date_ty), t, mdy(r.date_ly), l, t == null ? null : t - l, t == null || !l ? null : (t - l) / l]; });
+    const t = d3.sum(rows, (r) => r[2] || 0), l = d3.sum(rows.filter((r) => r[2] != null), (r) => r[4] || 0); total = ['MTD', '', t, '', l, t - l, l ? (t - l) / l : null];
+  }
+  return { title, sub, cols, rows, total };
+}
 function addDlButtons() {
   $$('.page:not(#home) .card > h2, .page .tiles .strip-head').forEach((hd) => {
     if (hd.querySelector('.dl')) return;
@@ -831,22 +863,53 @@ const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 const dlBlob = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); };
 const isPct = (k) => /_pct$/.test(k), num = (v) => (v == null || v === '' || isNaN(v)) ? null : Number(v);
 function exportCsv(x, name) {
-  const q = (s) => /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  const lines = [x.cols.map((c) => q(c[1])).join(',')];
-  for (const r of x.rows) lines.push(x.cols.map(([k]) => { const v = r[k]; if (v == null) return ''; const n = num(v); if (n == null) return q(String(v)); return isPct(k) ? (n * 100).toFixed(2) : (Number.isInteger(n) ? String(n) : n.toFixed(2)); }).join(','));
+  const v = viewOf(x), q = (s) => /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  const cell = (val, c) => val == null ? '' : typeof val === 'number' ? (c.f && c.f.includes('%') ? (val * 100).toFixed(1) + '%' : (Number.isInteger(val) ? String(val) : Math.round(val).toString())) : q(String(val));
+  const lines = [q(v.title), q(v.sub), '', v.cols.map((c) => q(c.h)).join(',')];
+  for (const r of v.rows) lines.push(r.map((val, i) => cell(val, v.cols[i])).join(','));
+  if (v.total) lines.push(v.total.map((val, i) => cell(val, v.cols[i])).join(','));
   dlBlob(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), name + '.csv');
 }
 let xlsxLoading = null;
-const loadXlsx = () => window.XLSX ? Promise.resolve() : (xlsxLoading || (xlsxLoading = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = res; s.onerror = () => rej(new Error('could not load the Excel writer')); document.head.appendChild(s); })));
+const loadXlsx = () => window.ExcelJS ? Promise.resolve() : (xlsxLoading || (xlsxLoading = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload = res; s.onerror = () => rej(new Error('could not load the Excel writer')); document.head.appendChild(s); })));
 async function exportXlsx(x, name) {
   await loadXlsx();
-  const aoa = [x.cols.map((c) => c[1])].concat(x.rows.map((r) => x.cols.map(([k]) => { const v = r[k]; const n = num(v); return n == null ? (v == null ? '' : String(v)) : n; })));
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let c = 0; c <= range.e.c; c++) { const k = x.cols[c][0], fmt = isPct(k) ? '0.0%' : (/_(ty|ly|chg)$|^(ce|gp)$/.test(k) ? '#,##0' : null); if (!fmt) continue; for (let r = 1; r <= range.e.r; r++) { const cell = ws[XLSX.utils.encode_cell({ r, c })]; if (cell && typeof cell.v === 'number') cell.z = fmt; } }
-  ws['!cols'] = x.cols.map((c, i) => ({ wch: Math.max(c[1].length + 2, i === 0 ? 24 : 14) }));
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, x.title.slice(0, 31).replace(/[\\/?*\[\]:]/g, ' '));
-  XLSX.writeFile(wb, name + '.xlsx');
+  const v = viewOf(x), wb = new ExcelJS.Workbook(); wb.creator = 'SED Sales Dashboard';
+  const GREEN = 'FF1A7F37', RED = 'FFC0392B', HEAD = 'FFE9E9E9', LINE = 'FFD9D9D9';
+  const ws = wb.addWorksheet(v.title.replace(/[\\/?*\[\]:]/g, ' ').slice(0, 31) || 'Sheet', { views: [{ state: 'frozen', ySplit: 4, showGridLines: false }] });
+  const n = v.cols.length;
+  // card header: title + subtitle on the site's gray band
+  ws.mergeCells(1, 1, 1, n); ws.mergeCells(2, 1, 2, n);
+  const t = ws.getCell(1, 1); t.value = v.title; t.font = { name: 'Segoe UI', size: 13, bold: true, color: { argb: 'FF1F1F1F' } }; t.alignment = { vertical: 'middle' };
+  const st = ws.getCell(2, 1); st.value = v.sub; st.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF6B6B6B' } }; st.alignment = { vertical: 'middle' };
+  for (let c = 1; c <= n; c++) { ws.getCell(1, c).fill = ws.getCell(2, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HEAD } }; }
+  ws.getRow(1).height = 24; ws.getRow(2).height = 18; ws.getRow(3).height = 6;
+  // column headers
+  const hr = ws.getRow(4);
+  v.cols.forEach((c, i) => { const cell = hr.getCell(i + 1); cell.value = c.h; cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF333333' } }; cell.alignment = { horizontal: i === 0 ? 'left' : 'right', vertical: 'middle' }; cell.border = { bottom: { style: 'medium', color: { argb: 'FFBFBFBF' } } }; });
+  hr.height = 18;
+  // rows, as the site paints them
+  const paint = (row, vals, bold) => {
+    vals.forEach((val, i) => {
+      const c = v.cols[i], cell = row.getCell(i + 1); cell.value = val == null ? '' : val;
+      cell.font = { name: 'Segoe UI', size: 10, bold: !!bold, color: { argb: c.c && typeof val === 'number' ? (val < 0 ? RED : GREEN) : 'FF1F1F1F' } };
+      cell.alignment = { horizontal: i === 0 ? 'left' : 'right', vertical: 'middle' };
+      if (c.f && typeof val === 'number') cell.numFmt = c.f;
+      cell.border = { bottom: { style: 'thin', color: { argb: LINE } } };
+    });
+    row.height = 16;
+  };
+  v.rows.forEach((r, i) => paint(ws.getRow(5 + i), r, false));
+  if (v.total) { const tr = ws.getRow(5 + v.rows.length); paint(tr, v.total, true); tr.eachCell((cell) => { cell.border = { top: { style: 'medium', color: { argb: 'FFBFBFBF' } } }; }); }
+  v.cols.forEach((c, i) => { ws.getColumn(i + 1).width = c.w || 14; });
+  // second sheet: every column behind the visual, both metrics
+  const ws2 = wb.addWorksheet('All data', { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws2.addRow(x.cols.map((c) => c[1])).font = { bold: true };
+  for (const r of x.rows) ws2.addRow(x.cols.map(([k]) => { const val = r[k]; const nn = num(val); return nn == null ? (val == null ? '' : String(val)) : nn; }));
+  x.cols.forEach((c, i) => { const col = ws2.getColumn(i + 1); col.width = Math.max(c[1].length + 2, i === 0 ? 24 : 14); const k = c[0]; if (isPct(k)) col.numFmt = '0.0%'; else if (/_(ty|ly|chg)$|^(ce|gp)$/.test(k)) col.numFmt = /^gp/.test(k) ? '"$"#,##0' : '#,##0'; });
+  ws2.getRow(1).font = { bold: true };
+  const buf = await wb.xlsx.writeBuffer();
+  dlBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name + '.xlsx');
 }
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('.dl button'); if (!b) return;
@@ -987,14 +1050,14 @@ dash.onData(() => {
   const top20 = (rows, keep) => rows ? sel(rows).filter((r) => r.rank <= 20 && (!keep || keep(r))).sort((a, b) => a.rank - b.rank) : null;
   const gain = (rows, keep) => rows ? sel(rows).filter((r) => !keep || keep(r)).sort((a, b) => b[F.chg()] - a[F.chg()]).slice(0, 5) : null;
   const drop = (rows, keep) => rows ? sel(rows).filter((r) => !keep || keep(r)).sort((a, b) => a[F.chg()] - b[F.chg()]).slice(0, 5) : null;
-  if (tot) { reg('t-ytd-ty', 'YTD summary', sel(tot).filter((r) => r.scope === 'YTD'), XCOL.tot); reg('t-mtd-ty', 'MTD summary', sel(tot).filter((r) => r.scope === 'MTD'), XCOL.tot); reg('t-mtd2-ty', 'MTD summary', sel(tot).filter((r) => r.scope === 'MTD'), XCOL.tot); }
+  if (tot) { reg('t-ytd-ty', 'YTD summary', sel(tot).filter((r) => r.scope === 'YTD'), XCOL.tot, 'tot'); reg('t-mtd-ty', 'MTD summary', sel(tot).filter((r) => r.scope === 'MTD'), XCOL.tot, 'tot'); reg('t-mtd2-ty', 'MTD summary', sel(tot).filter((r) => r.scope === 'MTD'), XCOL.tot, 'tot'); }
   if (byPqd) { reg('c-pqd-ytd', 'YTD by PQD', pqdRows('YTD'), XCOL.dim('pqd', 'PQD')); reg('c-pqd-mtd', 'MTD by PQD', pqdRows('MTD'), XCOL.dim('pqd', 'PQD')); reg('c-pqd-mtdchg', 'MTD change by PQD', pqdRows('MTD'), XCOL.dim('pqd', 'PQD')); }
-  if (trend) reg('c-trend', 'Monthly trend by PQD', sel(trend).slice().sort((a, b) => a.pqd.localeCompare(b.pqd) || a.year - b.year || a.month - b.month), XCOL.trend);
-  if (daily) reg('c-daily', 'MTD by day', sel(daily), XCOL.daily);
-  if (sup) { const C = XCOL.dim('supplier', 'Supplier'); reg('c-sup-bar', 'YTD top 10 suppliers', top10(sup), C); reg('tb-sup', 'YTD top 20 suppliers', top20(sup), C); reg('c-sup-up', 'YTD top 5 gainers suppliers', gain(sup), C); reg('c-sup-down', 'YTD bottom 5 decliners suppliers', drop(sup), C); }
-  if (bf) { const C = XCOL.dim('brand_family', 'Brand family'); reg('c-bf-bar', 'YTD top 10 brand families', top10(bf), C); reg('tb-bf', 'YTD top 20 brand families', top20(bf), C); reg('c-bf-up', 'YTD top 5 gainers brand families', gain(bf), C); reg('c-bf-down', 'YTD bottom 5 decliners brand families', drop(bf), C); }
-  if (seg) { const C = XCOL.dim('segment', 'Market segment'), sr = sel(seg); reg('c-seg-bar', 'YTD by market segment', sr, C); reg('c-seg-pie', 'YTD share by market segment', sr, C); reg('tb-seg', 'YTD market segment detail', sr.slice().sort((a, b) => b[F.chg()] - a[F.chg()]), C); reg('c-seg-chg', 'YTD change by market segment', sr, C); }
-  if (ch) { const C = XCOL.dim('chain', 'Chain'), isC = (r) => r.is_chain; reg('c-ch-bar', 'YTD top 10 chains', top10(ch, isC), C); reg('tb-ch', 'YTD top 20 chains', top20(ch, isC), C); reg('c-ch-up', 'YTD top 5 gainers chains', gain(ch, isC), C); reg('c-ch-down', 'YTD bottom 5 decliners chains', drop(ch, isC), C); }
+  if (trend) reg('c-trend', 'Monthly trend by PQD', sel(trend).slice().sort((a, b) => a.pqd.localeCompare(b.pqd) || a.year - b.year || a.month - b.month), XCOL.trend, 'trend');
+  if (daily) reg('c-daily', 'MTD by day', sel(daily), XCOL.daily, 'daily');
+  if (sup) { const C = XCOL.dim('supplier', 'Supplier'); reg('c-sup-bar', 'YTD top 10 suppliers', top10(sup), C); reg('tb-sup', 'YTD top 20 suppliers', top20(sup), C, 'dim', { total: true }); reg('c-sup-up', 'YTD top 5 gainers suppliers', gain(sup), C); reg('c-sup-down', 'YTD bottom 5 decliners suppliers', drop(sup), C); }
+  if (bf) { const C = XCOL.dim('brand_family', 'Brand family'); reg('c-bf-bar', 'YTD top 10 brand families', top10(bf), C); reg('tb-bf', 'YTD top 20 brand families', top20(bf), C, 'dim', { total: true }); reg('c-bf-up', 'YTD top 5 gainers brand families', gain(bf), C); reg('c-bf-down', 'YTD bottom 5 decliners brand families', drop(bf), C); }
+  if (seg) { const C = XCOL.dim('segment', 'Market segment'), sr = sel(seg); reg('c-seg-bar', 'YTD by market segment', sr, C); reg('c-seg-pie', 'YTD share by market segment', sr, C, 'pie'); reg('tb-seg', 'YTD market segment detail', sr.slice().sort((a, b) => b[F.chg()] - a[F.chg()]), C, 'dim', { total: true }); reg('c-seg-chg', 'YTD change by market segment', sr, C); }
+  if (ch) { const C = XCOL.dim('chain', 'Chain'), isC = (r) => r.is_chain; reg('c-ch-bar', 'YTD top 10 chains', top10(ch, isC), C); reg('tb-ch', 'YTD top 20 chains', top20(ch, isC), C, 'dim', { total: true }); reg('c-ch-up', 'YTD top 5 gainers chains', gain(ch, isC), C); reg('c-ch-down', 'YTD bottom 5 decliners chains', drop(ch, isC), C); }
   const fill = fitPage(page); // chart box id -> height that makes every column end on the same line
   if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd', fill['c-pqd-ytd'])); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of, fill['c-trend'])); }
   if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily, fill['c-daily']));
