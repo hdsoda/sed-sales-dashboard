@@ -330,32 +330,39 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
       + '<a href="#" id="live-refresh" class="btn">&#8635; Refresh from Snowflake <small>(about 2 min)</small></a>';
     document.getElementById('live-refresh').addEventListener('click', (e) => { e.preventDefault(); live(true); });
     if (!booted) { window.sedBoot(); window.sedCalcs(); window.sedRender(); booted = true; }
-    else { window.dash.setParams({}); }
+    else { window.dash.reload(); }
   }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const setStatus = (msg) => { const v = note.querySelector('.st:nth-child(2) .v'); if (v) { v.innerHTML = '<small>' + msg + '</small>'; } else note.textContent = msg; };
+  const centralToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
   async function live(force) {
     const started = Date.now();
     let url = '/api/data' + (force ? '?refresh=1' : '');
     for (let i = 0; i < 90; i++) {
       let r;
-      try { r = await fetch(url, { cache: 'no-store' }); } catch (e) { note.textContent = 'Could not reach the data service: ' + e.message; return; }
+      try { r = await fetch(url, { cache: 'no-store' }); } catch (e) { setStatus('Could not reach the data service: ' + e.message); return; }
       if (r.status === 200) { render(await r.json(), 'Live from Snowflake'); return; }
       if (r.status === 202) {
         const p = await r.json();
-        note.textContent = 'Querying Snowflake… ' + (p.elapsed_s || Math.round((Date.now() - started) / 1000)) + 's (the sales views take about 90 s to scan)';
+        setStatus('Querying Snowflake… ' + (p.elapsed_s || Math.round((Date.now() - started) / 1000)) + 's (about 90 s to scan the sales views)');
         url = '/api/data'; await sleep(5000); continue;
       }
       let m = 'HTTP ' + r.status; try { m = (await r.json()).error || m; } catch (e) {}
-      note.textContent = 'Live refresh failed: ' + m + (booted ? ' — showing the last daily build.' : '');
+      setStatus('Live refresh failed: ' + m + (booted ? ' — showing the last daily build.' : ''));
       return;
     }
-    note.textContent = 'Snowflake is still running the query; try refresh again in a minute.';
+    setStatus('Snowflake is still running the query; try refresh again in a minute.');
   }
   (async () => {
     note.textContent = 'Loading…';
     try {
       const r = await fetch('/data.json', { cache: 'no-store' });
-      if (r.ok) { render(await r.json(), 'Daily build'); return; }
+      if (r.ok) {
+        const payload = await r.json(); render(payload, 'Daily build');
+        const built = payload.meta && payload.meta.today;
+        if (built && built < centralToday()) { setStatus('built ' + fmt(payload.meta.queried_at) + ' — updating from Snowflake…'); await live(false); } // morning build missing or late: fetch today's numbers now
+        return;
+      }
     } catch (e) {}
     await live(false);           // no daily build yet (first deploy): go straight to Snowflake
   })();
@@ -364,7 +371,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <script>
 /* ---- standalone runtime: stands in for the hosted dashboard's `dash` object ---- */
 window.sedBoot = function () {
-  const D = window.__SED_DATA, calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: 'home' }, listeners = [];
+  let D = window.__SED_DATA; const calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: 'home' }, listeners = [];
   const compute = (id) => { const c = calcs[id]; if (!c) return; results[id] = c.fn(...c.inputs.map((i) => (D[i] || results[i]))); };
   const dash = {
     colors: ['#3570a8', '#e67e22', '#2e9e6b', '#c0392b', '#8e44ad', '#16a085', '#d35400', '#7f8c8d'],
@@ -376,6 +383,7 @@ window.sedBoot = function () {
     resetParams: () => { Object.assign(params, { metric: 'ce', wh: 'ALL', page: 'home' }); listeners.forEach((f) => f()); },
     setLink: (name) => { try { history.replaceState(null, '', '#' + name); } catch (e) {} },
     refresh: () => {},
+    reload: () => { D = window.__SED_DATA; Object.keys(calcs).forEach(compute); listeners.forEach((f) => f()); }, // new payload (live refresh): recompute everything from it
     onData: (f) => { listeners.push(f); f(); },
   };
   window.dash = dash;
@@ -830,7 +838,7 @@ dash.onData(() => {
     $$('.ytdwin').forEach((e) => e.textContent = `${mdy(W.ytd_start)} – ${mdy(W.ytd_end)}`); $$('.pywin').forEach((e) => e.textContent = `${mdy(W.py_ytd_start)} – ${mdy(W.py_ytd_end)}`);
     $$('.ytdwin2').forEach((e) => e.textContent = `${mdy(W.ytd_start)} – ${mdy(W.ytd_end)}`); $$('.pywin2').forEach((e) => e.textContent = `${mdy(W.py_ytd_start)} – ${mdy(W.py_ytd_end)}`);
     $$('.mtdwin2').forEach((e) => e.textContent = `${mdy(W.mtd_start)} – ${mdy(W.mtd_end)}`); $$('.pymtdwin2').forEach((e) => e.textContent = `${mdy(W.py_mtd_start)} – ${mdy(W.py_mtd_end)}`);
-    $$('.subwin').forEach((e) => { if (e.textContent === '—') e.textContent = `${mdy(W.ytd_start)} – ${mdy(W.ytd_end)} vs ${mdy(W.py_ytd_start)} – ${mdy(W.py_ytd_end)}`; });
+    $$('.subwin').forEach((e) => { e.textContent = `${mdy(W.ytd_start)} – ${mdy(W.ytd_end)} vs ${mdy(W.py_ytd_start)} – ${mdy(W.py_ytd_end)}`; });
     $$('.mtdnote').forEach((e) => e.textContent = `${mdy(W.mtd_start)} – ${mdy(W.mtd_end)} vs ${mdy(W.py_mtd_start)} – ${mdy(W.py_mtd_end)}`);
     $$('.mtdnote-wd').forEach((e) => e.textContent = `${mdy(W.mtd_start)} – ${mdy(W.mtd_end)} vs the same weekdays in ${W.py_mtd_start.slice(0, 4)}`);
     $$('[data-source=windows][data-field]:not(.asof)').forEach((e) => { e.textContent = W[e.dataset.field]; });

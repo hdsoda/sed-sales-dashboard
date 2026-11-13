@@ -2,8 +2,9 @@ name: Refresh dashboard data from Snowflake
 
 on:
   schedule:
-    - cron: '15 12 * * 1-6'     # 6:15 AM Central Standard Time (winter), Mon–Sat
-    - cron: '15 11 * * 1-6'     # 6:15 AM Central Daylight Time (summer) — the other one runs an hour off; harmless
+    # Every 30 min from 5:15 to 8:45 AM Central, Mon–Sat. GitHub often delays or skips a single cron slot,
+    # so several are listed; the "already built today" check below makes all but the first a no-op.
+    - cron: '15,45 11-14 * * 1-6'
   workflow_dispatch:
 
 permissions:
@@ -19,9 +20,18 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
+      - name: Already built today?
+        id: fresh
+        run: |
+          TODAY=$(TZ=America/Chicago date +%F)
+          BUILT=$(node -e "try{console.log(require('./data.json').meta.today)}catch(e){console.log('')}")
+          echo "today=$TODAY built=$BUILT event=${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$BUILT" = "$TODAY" ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
       - name: Install API dependencies
+        if: steps.fresh.outputs.skip == 'false'
         run: npm ci --prefix api
       - name: Query Snowflake and write data.json
+        if: steps.fresh.outputs.skip == 'false'
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
@@ -32,6 +42,7 @@ jobs:
           SNOWFLAKE_SCHEMA: PUBLIC
         run: node scripts/build-data.js
       - name: Commit data.json
+        if: steps.fresh.outputs.skip == 'false'
         run: |
           git config user.name "sed-dashboard-bot"
           git config user.email "sed-dashboard-bot@users.noreply.github.com"
@@ -39,6 +50,7 @@ jobs:
           git diff --cached --quiet && echo "no change" || git commit -m "data: refresh $(date -u +%Y-%m-%dT%H:%MZ)"
           git push
       - name: Deploy to Azure Static Web Apps
+        if: steps.fresh.outputs.skip == 'false'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_GROUND_074717B10 }}
