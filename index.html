@@ -411,7 +411,10 @@ window.sedBoot = function () {
     onData: (f) => { listeners.push(f); f(); },
   };
   window.dash = dash;
-  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => listeners.forEach((f) => f()), 120); });
+  let t; const refit = () => { clearTimeout(t); t = setTimeout(() => listeners.forEach((f) => f()), 120); };
+  window.addEventListener('resize', refit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit); // text re-measures once the web font is in; tables change height
+  if (window.ResizeObserver) { const band = document.querySelector('.band'); if (band) new ResizeObserver(refit).observe(band); } // the band grows/shrinks with the status block
 };
 </script>
 <script>
@@ -684,7 +687,7 @@ function dailyChart(box, rows, fillH) {
 function pieChart(box, rows, fillH) {
   /* report style: large slices carry their label inside (white), small ones are labelled outside on leader lines */
   const PIE = { 'INDY C-STORE': '#118dff', 'CHAIN C-STORE': '#12239e', 'GROCERY': '#e66c37', 'LIQUOR': '#6b007b', 'DRUG': '#e044a7', 'OTHER': '#744ec2', 'ON-PREMISE': '#d9b300', 'NON-RETAIL': '#d64550' };
-  const w = Math.max(320, box.clientWidth), h = fillH ? Math.max(240, fillH) : 340, cx = w * 0.6, cy = h / 2 + 2, R = Math.min(h / 2 - 22, w * 0.31), svg = svgIn(box, w, h);
+  const w = Math.max(320, box.clientWidth), h = fillH ? Math.max(170, fillH) : 340, cx = w * 0.6, cy = h / 2 + 2, R = Math.min(h / 2 - 22, w * 0.31), svg = svgIn(box, w, h);
   const r2 = sel(rows).filter((r) => r[F.ty()] > 0), total = d3.sum(r2, (r) => r[F.ty()]);
   const arcs = d3.pie().sort(null).value((r) => r[F.ty()])(r2), arc = d3.arc().innerRadius(0).outerRadius(R), edge = d3.arc().innerRadius(R).outerRadius(R), inner = d3.arc().innerRadius(R * 0.55).outerRadius(R * 0.55);
   const color = (d, i) => PIE[d.data.segment] || dash.colors[i % dash.colors.length];
@@ -796,12 +799,12 @@ function applyZoom(sec) {
 function fitPage(id) {
   const sec = document.getElementById(id), out = {}; if (!sec || sec.hidden) return out;
   const z = zoomOf(id), foot = $('.foot'), main = $('.main');
-  const below = (foot ? foot.offsetHeight + parseFloat(getComputedStyle(foot).marginTop) : 0) + parseFloat(getComputedStyle(main).paddingBottom);
-  const T = (window.innerHeight - sec.getBoundingClientRect().top - below) / z; // page height, in the page's own (zoomed) pixels
+  const footOn = foot && !foot.hidden, below = (footOn ? foot.offsetHeight + parseFloat(getComputedStyle(foot).marginTop) : 0) + parseFloat(getComputedStyle(main).paddingBottom);
+  const T = (window.innerHeight - (sec.getBoundingClientRect().top + window.scrollY) - below) / z; // page height, in the page's own (zoomed) pixels (scroll-independent)
   if (T < 420) return out; // too small a window to fit: let the page scroll at its natural size
   const grid = sec.querySelector(':scope > .grid'); if (!grid) return out;
   const gap = parseFloat(getComputedStyle(grid).gap) || 12;
-  const G = T - (grid.getBoundingClientRect().top - sec.getBoundingClientRect().top) / z - parseFloat(getComputedStyle(grid).marginBottom); // height left for the grid
+  const G = T - (grid.getBoundingClientRect().top - sec.getBoundingClientRect().top) / z - parseFloat(getComputedStyle(grid).marginBottom) - 1; // height left for the grid
   if (id === 'home') { grid.style.minHeight = G + 'px'; return out; }
   const chrome = (card, box) => card.offsetHeight - box.offsetHeight; // header, subtitle, legend, padding around the chart
   for (const col of grid.children) {
@@ -810,9 +813,11 @@ function fitPage(id) {
     if (!flex.length && fixed.length === 1) { const c = fixed[0], tb = c.querySelector('.tbox'); c.style.height = ''; const ch = chrome(c, tb); c.style.boxSizing = 'border-box'; c.style.height = G + 'px'; tb.style.maxHeight = Math.max(120, G - ch) + 'px';
       const tbl = tb.querySelector('table'); if (tbl) { tbl.style.setProperty('--rowpad', '3px'); const extra = (G - ch) - tbl.offsetHeight, n = tbl.rows.length || 1; tbl.style.setProperty('--rowpad', (3 + Math.max(0, Math.min(5, extra / n / 2))).toFixed(1) + 'px'); } continue; }
     let avail = G - gap * (cards.length - 1);
-    for (const c of fixed) { c.style.height = ''; const tb = c.querySelector('.tbox'); tb.style.maxHeight = Math.max(120, G * 0.45) + 'px'; avail -= c.offsetHeight; }
+    // a chart keeps at least this much drawing height; a table beside it scrolls inside its card rather than push the column past the line
+    const MIN_CHART = 170, flexMin = d3.sum(flex, (c) => chrome(c, c.querySelector('.chart')) + MIN_CHART);
+    for (const c of fixed) { c.style.height = ''; const tb = c.querySelector('.tbox'); tb.style.maxHeight = Math.max(100, (avail - flexMin) / fixed.length - chrome(c, tb)) + 'px'; avail -= c.offsetHeight; }
     const share = avail / Math.max(1, flex.length);
-    for (const c of flex) { const box = c.querySelector('.chart'); out[box.id] = Math.max(0, share - chrome(c, box)); }
+    for (const c of flex) { const box = c.querySelector('.chart'); out[box.id] = Math.max(MIN_CHART, share - chrome(c, box)); }
   }
   return out;
 }
