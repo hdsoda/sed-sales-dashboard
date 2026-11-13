@@ -90,7 +90,8 @@ async function check(handle) {
 /** Run one statement and wait for it (polls); returns {columns, rows} with every partition collected. */
 async function runSql(statement, { timeout = 600 } = {}) {
   const c = cfg(); const token = makeJwt(c);
-  let { status, body } = await call(c, token, '/api/v2/statements', { method: 'POST', body: statementBody(c, statement, Math.min(timeout, 170)) });
+  // `timeout` is Snowflake's statement timeout (it cancels the query past it); the sync endpoint still answers 202 after 45 s and we poll
+  let { status, body } = await call(c, token, '/api/v2/statements', { method: 'POST', body: statementBody(c, statement, timeout) });
   const handle = body.statementHandle;
   let waited = 0;
   while (status === 202 || body.code === '333334') {
