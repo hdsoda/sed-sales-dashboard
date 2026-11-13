@@ -146,6 +146,9 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .rep .hl .lbl { font-size: 11px; color: var(--color-fg-muted); width: 100%; }
   .sed .rep .mini { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
   #home .zoomer { display: none; }
+  .sed .home-grid.tight .mrow:nth-child(n+6) { display: none; }
+  .sed .home-grid.tighter .mrow:nth-child(n+5) { display: none; }
+  .sed .home-grid.tight .rep .hl .big { font-size: 22px; }
   .sed .rep .mini .cap { font-size: 10px; color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .4px; margin: 6px 0 3px; }
   .sed .rep .mrow { display: grid; grid-template-columns: minmax(0, 1fr) 2fr auto; gap: 8px; align-items: center; font-size: 11px; padding: 3px 0; }
   .sed .rep .mrow .mn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -812,7 +815,12 @@ function fitPage(id) {
   const grid = sec.querySelector(':scope > .grid'); if (!grid) return out;
   const gap = parseFloat(getComputedStyle(grid).gap) || 12;
   const G = T - (grid.getBoundingClientRect().top - sec.getBoundingClientRect().top) / z - parseFloat(getComputedStyle(grid).marginBottom) - 1; // height left for the grid
-  if (id === 'home') { grid.style.minHeight = G + 'px'; return out; }
+  if (id === 'home') { // the tiles fill the page; if their content is taller than the page allows, drop a mini row or two so the method note stays on screen
+    grid.style.minHeight = G + 'px'; grid.classList.remove('tight', 'tighter');
+    if (grid.offsetHeight > G + 2) grid.classList.add('tight');
+    if (grid.offsetHeight > G + 2) grid.classList.add('tighter');
+    return out;
+  }
   const chrome = (card, box) => card.offsetHeight - box.offsetHeight; // header, subtitle, legend, padding around the chart
   for (const col of grid.children) {
     const cards = col.classList.contains('card') ? [col] : [...col.querySelectorAll(':scope > .card')];
