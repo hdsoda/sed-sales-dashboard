@@ -429,7 +429,7 @@ window.sedBoot = function () {
   let t; const refit = () => { clearTimeout(t); t = setTimeout(() => listeners.forEach((f) => f()), 120); };
   window.addEventListener('resize', refit);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit); // text re-measures once the web font is in; tables change height
-  if (window.ResizeObserver) { const band = document.querySelector('.band'); if (band) new ResizeObserver(refit).observe(band); } // the band grows/shrinks with the status block
+  if (window.ResizeObserver) { const band = document.querySelector('.band'); let bh = 0; if (band) new ResizeObserver(() => { const nh = band.offsetHeight; if (nh !== bh) { bh = nh; refit(); } }).observe(band); } // the band grows/shrinks with the status block (height only: width changes with the scrollbar)
 };
 </script>
 <script>
@@ -828,7 +828,9 @@ function fitPage(id) {
   const gap = parseFloat(getComputedStyle(grid).gap) || 12;
   const G = T - (grid.getBoundingClientRect().top - sec.getBoundingClientRect().top) / z - parseFloat(getComputedStyle(grid).marginBottom) - 1; // height left for the grid
   if (id === 'home') { // the tiles fill the page; if their content is taller than the page allows, drop a mini row or two so the method note stays on screen
-    grid.style.minHeight = G + 'px'; grid.classList.remove('tight', 'tighter');
+    grid.style.minHeight = G + 'px';
+    // only re-grow the tiles when the window itself changed size: re-deciding on every pass can flip the scrollbar on and off and make the page jitter
+    const win = window.innerWidth + 'x' + window.innerHeight; if (fitPage.homeWin !== win) { fitPage.homeWin = win; grid.classList.remove('tight', 'tighter'); }
     if (grid.offsetHeight > G + 2) grid.classList.add('tight');
     if (grid.offsetHeight > G + 2) grid.classList.add('tighter');
     return out;
