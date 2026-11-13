@@ -695,16 +695,23 @@ function pieChart(box, rows, fillH) {
   g.selectAll('path').data(arcs).join('path').attr('d', arc).attr('fill', color).attr('stroke', '#fff').attr('stroke-width', 1.5)
     .on('mousemove', (ev, d) => showTip(box, ev, `<div style="color:var(--cds-text-secondary)">${esc(d.data.segment)}</div><div>${fmtFull(d.data[F.ty()])} · ${d3.format('.1%')(d.data[F.ty()] / total)}</div>`)).on('mouseleave', () => hideTip(box));
   const share = (d) => d3.format('.1%')(d.data[F.ty()] / total);
-  const big = arcs.filter((d) => d.endAngle - d.startAngle > 0.5), small = arcs.filter((d) => d.endAngle - d.startAngle <= 0.5);
-  // inside labels
+  // inside labels: only where the three lines actually fit the slice at this pie size; fonts scale down with a small pie
+  const k = Math.max(0.7, Math.min(1, R / 150));
   const mid = (d) => d.endAngle - d.startAngle < 0.8;   // medium slices get a smaller inside label, further out
-  const inner2 = d3.arc().innerRadius(R * 0.68).outerRadius(R * 0.68);
-  const ti = g.selectAll('.pi').data(big).join('text').attr('transform', (d) => `translate(${(mid(d) ? inner2 : inner).centroid(d)})`).attr('text-anchor', 'middle').attr('fill', '#fff').attr('font-size', (d) => mid(d) ? 9 : 11);
+  const fsz = (d) => mid(d) ? { name: 9 * k, val: 12 * k, pct: 9 * k, rl: 0.68 } : { name: 11 * k, val: 14 * k, pct: 10 * k, rl: 0.55 };
+  const fitsInside = (d) => {
+    const th = d.endAngle - d.startAngle; if (th <= 0.5) return false;
+    const f = fsz(d), rl = R * f.rl, chord = th >= Math.PI ? 2 * R * 0.8 : 2 * rl * Math.sin(th / 2); // width across the slice at the label's radius
+    const need = Math.max(textW(svg, d.data.segment, f.name), textW(svg, fmt(d.data[F.ty()]), f.val), textW(svg, `(${share(d)})`, f.pct));
+    return need <= chord - 2 && R - rl >= (f.name + f.val + f.pct) * 0.62; // enough width, and enough depth for three lines
+  };
+  const big = arcs.filter(fitsInside), small = arcs.filter((d) => !fitsInside(d));
+  const ti = g.selectAll('.pi').data(big).join('text').attr('transform', (d) => `translate(${d3.arc().innerRadius(R * fsz(d).rl).outerRadius(R * fsz(d).rl).centroid(d)})`).attr('text-anchor', 'middle').attr('fill', '#fff').attr('font-size', (d) => fsz(d).name);
   ti.append('tspan').attr('x', 0).attr('dy', '-0.9em').text((d) => d.data.segment);
-  ti.append('tspan').attr('x', 0).attr('dy', '1.2em').attr('font-weight', 700).attr('font-size', (d) => mid(d) ? 12 : 14).text((d) => fmt(d.data[F.ty()]));
-  ti.append('tspan').attr('x', 0).attr('dy', '1.15em').attr('font-style', 'italic').attr('font-size', (d) => mid(d) ? 9 : 10).text((d) => `(${share(d)})`);
-  // outside labels for the small slices, spaced per side
-  const labR = R + 18, gap = 30;
+  ti.append('tspan').attr('x', 0).attr('dy', '1.2em').attr('font-weight', 700).attr('font-size', (d) => fsz(d).val).text((d) => fmt(d.data[F.ty()]));
+  ti.append('tspan').attr('x', 0).attr('dy', '1.15em').attr('font-style', 'italic').attr('font-size', (d) => fsz(d).pct).text((d) => `(${share(d)})`);
+  // outside labels for everything else, spaced per side (the spacing tightens when a side has many labels on a short pie)
+  const labR = R + 18, perSide = Math.max(1, d3.max([true, false], (s) => small.filter((d) => ((d.startAngle + d.endAngle) / 2 < Math.PI) === s).length)), gap = Math.max(22, Math.min(30, (h - 34) / perSide));
   const labs = small.map((d) => { const mid = (d.startAngle + d.endAngle) / 2, right = mid < Math.PI; const [ex, ey] = edge.centroid(d); return { d, right, ex, ey, kx: Math.cos(mid - Math.PI / 2) * labR, y: Math.sin(mid - Math.PI / 2) * labR }; });
   for (const side of [true, false]) {
     const L = labs.filter((l) => l.right === side).sort((a, b) => a.y - b.y);
