@@ -856,7 +856,7 @@ dash.onData(() => {
   $$('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.page === state.page));
   $$('.page').forEach((s) => { s.hidden = s.id !== state.page; });
   $('#title').textContent = PAGE_TITLES[state.page] || state.page; $('.sdt').dataset.scope = state.page.startsWith('mtd') ? 'mtd' : 'ytd';
-  { const f = $('.foot'); if (f) f.hidden = !(state.page === 'home' || state.page === 'ytd-pqd'); } // the method note shows on Home and the first report only
+  { const f = $('.foot'); if (f) f.hidden = state.page !== 'home'; } // the method note shows on Home only
   $$('.mname').forEach((e) => e.textContent = mname()); $$('.mshort').forEach((e) => e.textContent = mname());
   const sfx = (e) => e.dataset.suffix ? ` — ${e.dataset.suffix}` : ''; // tells same-named cards on a page apart
   $$('.ttl-ytd').forEach((e) => e.textContent = `YTD ${mname()}` + sfx(e));
