@@ -58,6 +58,9 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .public-note a.btn { margin-left: 14px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.4); border-radius: 3px; padding: 6px 12px; color: #fff; font-weight: 700; font-size: 12px; text-decoration: none; cursor: pointer; white-space: nowrap; }
   .sed .public-note a.btn:hover { background: rgba(255,255,255,.22); }
   .sed .public-note a.btn small { font-weight: 400; color: #dbe6f2; }
+  .sed .public-note a.btn.busy { opacity: .45; pointer-events: none; }
+  .sed .public-note .pbar { display: block; width: 190px; height: 7px; background: rgba(255,255,255,.22); border-radius: 4px; overflow: hidden; margin: 3px 0 2px; }
+  .sed .public-note .pbar i { display: block; height: 100%; background: linear-gradient(90deg, #8fd3ff, #ffffff); border-radius: 4px; transition: width .9s linear; }
   .sed .public-note .muted { opacity: .8; }
   .sed .ctl { background: #fff; color: var(--color-fg); border: 1px solid #c9ccd8; padding: 4px 6px 6px; }
   .sed .ctl .lbl { font-size: 10px; font-weight: 700; color: #333; margin: 0 0 3px 2px; }
@@ -335,23 +338,42 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const setStatus = (msg) => { const v = note.querySelector('.st:nth-child(2) .v'); if (v) { v.innerHTML = '<small>' + msg + '</small>'; } else note.textContent = msg; };
   const centralToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  /* progress bar for a live refresh. Snowflake reports no percentage, so the bar is paced against how long the
+     last query took (meta.query_ms, ~2 min): linear to 90% over that time, then it creeps toward 97% until the
+     result lands, when it snaps to 100%. Ticks every second between the 5-second polls. */
+  const progress = (() => {
+    let timer = null, t0 = 0, expect = 120;
+    const pct = () => { const x = (Date.now() - t0) / 1000 / expect; return x <= 1 ? 90 * x : 90 + 7 * (1 - Math.exp(-(x - 1) * 1.5)); };
+    const paint = (done) => {
+      const p = done ? 100 : pct(), secs = Math.round((Date.now() - t0) / 1000);
+      const slot = note.querySelector('.st:nth-child(2)'); if (!slot) return;
+      slot.querySelector('.k').textContent = done ? 'Live from Snowflake' : 'Refreshing from Snowflake…';
+      slot.querySelector('.v').innerHTML = `<span class="pbar"><i style="width:${p.toFixed(1)}%"></i></span><small>${Math.round(p)}% · ${secs}s of about ${Math.round(expect)}s</small>`;
+      const btn = note.querySelector('#live-refresh'); if (btn) btn.classList.toggle('busy', !done);
+    };
+    return {
+      start: () => { const last = window.__SED_DATA && window.__SED_DATA.meta && window.__SED_DATA.meta.query_ms; expect = Math.max(60, (last ? last / 1000 : 110) * 1.1); t0 = Date.now(); clearInterval(timer); timer = setInterval(() => paint(false), 1000); paint(false); },
+      sync: (elapsedS) => { if (elapsedS) t0 = Math.min(t0, Date.now() - elapsedS * 1000); }, // the query may have been started earlier by someone else
+      stop: (done) => { clearInterval(timer); timer = null; if (done) paint(true); },
+    };
+  })();
   async function live(force) {
-    const started = Date.now();
     let url = '/api/data' + (force ? '?refresh=1' : '');
+    progress.start();
     for (let i = 0; i < 90; i++) {
       let r;
-      try { r = await fetch(url, { cache: 'no-store' }); } catch (e) { setStatus('Could not reach the data service: ' + e.message); return; }
-      if (r.status === 200) { render(await r.json(), 'Live from Snowflake'); return; }
+      try { r = await fetch(url, { cache: 'no-store' }); } catch (e) { progress.stop(false); setStatus('Could not reach the data service: ' + e.message); return; }
+      if (r.status === 200) { const payload = await r.json(); progress.stop(true); await sleep(400); render(payload, 'Live from Snowflake'); return; }
       if (r.status === 202) {
-        const p = await r.json();
-        setStatus('Querying Snowflake… ' + (p.elapsed_s || Math.round((Date.now() - started) / 1000)) + 's (about 90 s to scan the sales views)');
+        const p = await r.json(); progress.sync(p.elapsed_s);
         url = '/api/data'; await sleep(5000); continue;
       }
+      progress.stop(false);
       let m = 'HTTP ' + r.status; try { m = (await r.json()).error || m; } catch (e) {}
       setStatus('Live refresh failed: ' + m + (booted ? ' — showing the last daily build.' : ''));
       return;
     }
-    setStatus('Snowflake is still running the query; try refresh again in a minute.');
+    progress.stop(false); setStatus('Snowflake is still running the query; try refresh again in a minute.');
   }
   (async () => {
     note.textContent = 'Loading…';
@@ -360,7 +382,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
       if (r.ok) {
         const payload = await r.json(); render(payload, 'Daily build');
         const built = payload.meta && payload.meta.today;
-        if (built && built < centralToday()) { setStatus('built ' + fmt(payload.meta.queried_at) + ' — updating from Snowflake…'); await live(false); } // morning build missing or late: fetch today's numbers now
+        if (built && built < centralToday()) await live(false); // morning build missing or late: fetch today's numbers now
         return;
       }
     } catch (e) {}
@@ -371,7 +393,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 <script>
 /* ---- standalone runtime: stands in for the hosted dashboard's `dash` object ---- */
 window.sedBoot = function () {
-  let D = window.__SED_DATA; const calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: 'home' }, listeners = [];
+  const fromHash = location.hash.slice(1), startPage = fromHash && document.getElementById(fromHash) && document.getElementById(fromHash).classList.contains('page') ? fromHash : 'home'; // deep links (#ytd-supplier) open that page
+  let D = window.__SED_DATA; const calcs = {}, results = {}, params = { metric: 'ce', wh: 'ALL', page: startPage }, listeners = [];
   const compute = (id) => { const c = calcs[id]; if (!c) return; results[id] = c.fn(...c.inputs.map((i) => (D[i] || results[i]))); };
   const dash = {
     colors: ['#3570a8', '#e67e22', '#2e9e6b', '#c0392b', '#8e44ad', '#16a085', '#d35400', '#7f8c8d'],
@@ -819,7 +842,7 @@ dash.onData(() => {
   $$('.w-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.wh === state.wh));
   $$('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.page === state.page));
   $$('.page').forEach((s) => { s.hidden = s.id !== state.page; });
-  $('#title').textContent = PAGE_TITLES[state.page] || state.page;
+  $('#title').textContent = PAGE_TITLES[state.page] || state.page; $('.sdt').dataset.scope = state.page.startsWith('mtd') ? 'mtd' : 'ytd';
   { const f = $('.foot'); if (f) f.hidden = !(state.page === 'home' || state.page === 'ytd-pqd'); } // the method note shows on Home and the first report only
   $$('.mname').forEach((e) => e.textContent = mname()); $$('.mshort').forEach((e) => e.textContent = mname());
   const sfx = (e) => e.dataset.suffix ? ` — ${e.dataset.suffix}` : ''; // tells same-named cards on a page apart
