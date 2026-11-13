@@ -124,7 +124,12 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .cat { font-size: 11px; fill: var(--color-fg); }
   [data-dash-source-state=empty] { color: transparent; }
   [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
-  .sed .foot { color: var(--color-fg-muted); font-size: 11px; margin-top: var(--cds-gap-lg); }
+  .sed .foot { color: var(--color-fg-muted); font-size: 11px; margin-top: var(--cds-gap-lg); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 0; line-height: 1.35; }
+  .sed .foot .fi { padding: 0 14px 0 12px; border-left: 1px solid #c9ccd8; }
+  .sed .foot .fi:nth-child(3n+1) { padding-left: 0; border-left: 0; }
+  @media (max-width: 1250px) { .sed .foot { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sed .foot .fi:nth-child(3n+1) { padding-left: 12px; border-left: 1px solid #c9ccd8; } .sed .foot .fi:nth-child(2n+1) { padding-left: 0; border-left: 0; } }
+  .sed .foot .fi b { color: #333; font-weight: 700; margin-right: 4px; }
+  .sed .foot .fi b::after { content: '·'; color: #9aa1ad; margin-left: 5px; font-weight: 400; }
   .sed .foot[hidden] { display: none; }
   /* ---- home tableau ---- */
   .sed .tabs .home-tab { border-bottom: 1px solid rgba(255,255,255,.15); margin-bottom: 8px; }
@@ -314,7 +319,14 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   </div>
 </section>
 
-<p class="foot">Volume = case equivalents (cases × oz per case ÷ 288; bottle-unit lines excluded, as in the Power BI model). Gross profit = product sales − invoice discount − product cost. Items with no Product Designation (PQD) are out of scope; THC is left off the monthly trend panels. Windows end on the last complete day of sales; last year is the same calendar days one year earlier (the daily chart matches weekdays, 364 days back). MTD selling days are counted through today, as in the Power BI report. Data: SED_DB.PUBLIC views (VW_BASE_SALES_V2 by year, VW_BASE_ITEMS_V2, VW_ALL_ACCOUNTS_V2) — rebuilt every morning after the overnight load, or pulled live from Snowflake on demand.</p>
+<div class="foot">
+  <span class="fi"><b>Volume</b> case equivalents: cases × oz per case ÷ 288 (bottle-unit lines excluded)</span>
+  <span class="fi"><b>Gross profit</b> product sales − invoice discount − product cost</span>
+  <span class="fi"><b>Scope</b> items with a Product Designation (PQD); THC left off the trend panels</span>
+  <span class="fi"><b>Windows</b> through the last complete day of sales; last year = same calendar days (daily chart: same weekdays, 364 days back)</span>
+  <span class="fi"><b>Selling days</b> MTD counted through today, as in Power BI</span>
+  <span class="fi"><b>Data</b> SED_DB.PUBLIC views (sales by year, items, accounts) — rebuilt every morning, or live from Snowflake on demand</span>
+</div>
 </main>
 </div>
 
