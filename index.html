@@ -136,6 +136,12 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   .sed .foot .fi:nth-child(2n+1) { padding-left: 0; border-left: 0; }
   .sed .foot .fi b { color: #333; font-weight: 700; margin-right: 4px; }
   .sed .foot .fi b::after { content: '·'; color: #9aa1ad; margin-left: 5px; font-weight: 400; }
+  /* (i) hover note */
+  .sed .info { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin-left: 3px; border: 1px solid #8a93a3; border-radius: 50%; color: #4b5563; font: italic 700 9px/1 Georgia, 'Times New Roman', serif; cursor: help; vertical-align: 1px; }
+  .sed .info:hover, .sed .info:focus { border-color: var(--steel); color: var(--steel); outline: none; }
+  .sed .info .tip { display: none; position: absolute; left: 50%; bottom: calc(100% + 7px); transform: translateX(-50%); width: 330px; padding: 8px 10px; background: #1f2937; color: #fff; font: 400 11px/1.4 var(--font-anthropic-sans, system-ui, sans-serif); font-style: normal; border-radius: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.2); text-align: left; z-index: 20; }
+  .sed .info .tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #1f2937; }
+  .sed .info:hover .tip, .sed .info:focus .tip { display: block; }
   .sed .foot[hidden] { display: none; }
   /* ---- home tableau ---- */
   .sed .tabs .home-tab { border-bottom: 1px solid rgba(255,255,255,.15); margin-bottom: 8px; }
@@ -327,7 +333,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
 
 <div class="foot">
   <span class="fi"><b>Volume</b> case equivalents: cases × oz per case ÷ 288 (bottle-unit lines excluded)</span>
-  <span class="fi"><b>Gross profit</b> product sales − invoice discount − product cost</span>
+  <span class="fi"><b>Gross profit</b> product sales − invoice discount − product cost <span class="info" tabindex="0" aria-label="How gross profit is calculated">i<span class="tip" role="tooltip">For every invoice line, gross profit = PRODUCT_SALES − INVOICE_DISCOUNT − PRODUCT_COST; the lines are then summed. Product sales are gross of the discount, and cost is product cost only (no freight, warehouse or delivery costs).</span></span></span>
   <span class="fi"><b>Windows</b> through the last complete selling day (Mon–Fri, not a holiday); last year = same calendar days (daily chart: same weekdays, 364 days back)</span>
   <span class="fi"><b>Data</b> SED_DB.PUBLIC views (sales by year, items, accounts) — rebuilt every morning, or live from Snowflake on demand</span>
 </div>
