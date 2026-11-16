@@ -14,7 +14,7 @@ Browser ──> Static Web App (index.html)
 
 The numbers reproduce the Power BI model's rules exactly (reconciled to the cent on 11/6/2026):
 CEs = cases × OZ_CASE ÷ 288 with bottle lines (unit id 0/3) excluded; GP = sales − discount − cost;
-in-scope = items with a PQD; windows anchored on the last complete day of sales; last year = same calendar days.
+in-scope = items with a PQD; windows anchored on the last complete selling day (latest Mon–Fri non-holiday with invoices before today); last year = same calendar days.
 
 ## One-time setup (about 20 minutes)
 
@@ -93,6 +93,7 @@ data.json                   the daily build (written by the refresh workflow; th
 api/data/index.js           GET /api/data — submits the query async, 202 while running, 200 with the payload
 api/lib/snowflake.js        SQL REST API client with key-pair JWT (no SDK): runSql, submit, check
 api/lib/sql.js              the model's rules as one SQL statement (grouping sets; windows computed in SQL)
+api/lib/calendar.js         holidays + selling-day rule shared by the SQL window end and the day counts
 api/lib/build.js            datasets from the result rows (windows, YTD/MTD, daily, dims)
 api/test-connection.js      smoke test
 scripts/build-data.js       what the refresh workflow runs: query → data.json

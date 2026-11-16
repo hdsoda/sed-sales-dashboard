@@ -1,9 +1,7 @@
 // Builds the nine dashboard datasets from the two Snowflake result sets.
 // Port of the Python build that was reconciled to the Power BI model (11/6/2026).
 
-const HOLIDAYS = new Set(['2025-01-01', '2025-05-26', '2025-09-01', '2025-11-27', '2025-12-25',
-  '2026-01-01', '2026-05-25', '2026-09-07', '2026-11-26', '2026-12-25',
-  '2027-01-01', '2027-05-31', '2027-09-06', '2027-11-25', '2027-12-24']);
+const { HOLIDAY_SET: HOLIDAYS, isSellingDay } = require('./calendar');
 
 const SEGMENT_MAP = {
   'ADULT ENTERTAIN': 'ON-PREMISE', 'AIRLINE TERMINA': 'ON-PREMISE', 'ALTERNATIVE LIF': 'ON-PREMISE', 'BANQUET/CATERER': 'ON-PREMISE',
@@ -62,8 +60,9 @@ const r2 = (v) => String(Math.round((Number(v) || 0) * 100) / 100);
 
 /** today: 'YYYY-MM-DD' in Houston. daily: rows {D, WH, PQD, CE, GP}. */
 function windowsFrom(daily, today) {
-  const dates = daily.map((r) => r.D).filter((d) => d < today);
-  if (!dates.length) throw new Error('No sales before today in the views');
+  // last complete day = the latest selling day (Mon–Fri, not a holiday) with invoices before today (same rule as the SQL's window end)
+  const dates = daily.map((r) => r.D).filter((d) => d < today && isSellingDay(d));
+  if (!dates.length) throw new Error('No sales on a selling day before today in the views');
   const lcd = dates.reduce((a, b) => (a > b ? a : b));
   const y = +lcd.slice(0, 4), m = +lcd.slice(5, 7);
   const py_end = minus12Months(lcd); const py = +py_end.slice(0, 4), pm = +py_end.slice(5, 7);

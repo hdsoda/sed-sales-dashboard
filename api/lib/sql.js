@@ -1,8 +1,9 @@
 // The model's rules, in SQL. One statement, one scan of the sales views, two grouping sets:
 //   G = 0  → daily rows   (D, WH, PQD)                        → windows, YTD/MTD by PQD, monthly trend, daily chart
 //   G = 1  → dim rows     (WH, SUPPLIER_NAME, BRAND_FAMILY, COT, CHAIN) with YTD / PY-YTD sums → supplier, brand, segment, chain
-// Windows are computed in SQL from the last complete day (latest invoiced day before `today`).
+// Windows are computed in SQL from the last complete day: the latest selling day (Mon–Fri, not a holiday) with invoices before `today`.
 const DB = () => `${process.env.SNOWFLAKE_DATABASE || 'SED_DB'}.${process.env.SNOWFLAKE_SCHEMA || 'PUBLIC'}`;
+const { HOLIDAYS } = require('./calendar');
 
 function dashboardSql(years, today) {
   const union = years.map((y) =>
@@ -37,7 +38,7 @@ ${union}
     w AS (
       SELECT LCD, DATE_TRUNC('YEAR', LCD)::DATE AS YTD_S, DATEADD(MONTH, -12, LCD)::DATE AS PY_E,
              DATE_TRUNC('YEAR', DATEADD(MONTH, -12, LCD))::DATE AS PY_S
-      FROM (SELECT MAX(D) AS LCD FROM f WHERE D < '${today}')
+      FROM (SELECT MAX(D) AS LCD FROM f WHERE D < '${today}' AND DAYOFWEEKISO(D) <= 5 AND D NOT IN (${HOLIDAYS.map((d) => `'${d}'`).join(', ')}))
     )
     SELECT GROUPING(D) AS G, f.D, f.WH, f.PQD, f.SUPPLIER_NAME, f.BRAND_FAMILY, f.COT, f.CHAIN,
            SUM(CE) AS CE, SUM(GP) AS GP,
