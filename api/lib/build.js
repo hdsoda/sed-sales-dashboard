@@ -109,7 +109,8 @@ function buildFromDaily(daily, W) {
     const dt = ymd(y, m, d), ly = addDays(dt, -364);
     for (const wh of ['4', '6']) {
       const t = byDay.get(dt + '|' + wh), l = byDay.get(ly + '|' + wh), open = dt <= W.as_of;
-      mtd_daily.push({ day: String(d), date_ty: dt, date_ly: ly, wh, ce_ty: open ? r2(t ? t.ce : 0) : '', gp_ty: open ? r2(t ? t.gp : 0) : '', ce_ly: r2(l ? l.ce : 0), gp_ly: r2(l ? l.gp : 0) });
+      // sell_ty / sell_ly: whether each date is a selling day (Mon–Fri, not a holiday); the chart plots selling days only
+      mtd_daily.push({ day: String(d), date_ty: dt, date_ly: ly, wh, sell_ty: isSellingDay(dt) ? '1' : '0', sell_ly: isSellingDay(ly) ? '1' : '0', ce_ty: open ? r2(t ? t.ce : 0) : '', gp_ty: open ? r2(t ? t.gp : 0) : '', ce_ly: r2(l ? l.ce : 0), gp_ly: r2(l ? l.gp : 0) });
     }
   }
   return { ytd_pqd, mtd_pqd, monthly_pqd, mtd_daily };

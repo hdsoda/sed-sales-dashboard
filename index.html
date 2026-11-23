@@ -250,7 +250,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
   </div>
   <div class="grid one">
     <div class="card"><h2 class="ttl-daily">Daily volume (CEs) — this year vs last year</h2><p class="note mtdnote-wd">—</p>
-      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year (same weekday)</span></div>
+      <div class="legend"><span><i class="sw-ty"></i>This Year</span><span><i class="sw-ly"></i>Last Year (same weekday) · selling days only</span></div>
       <div class="chart rel" id="c-daily" data-source="daily"></div></div>
   </div>
 </section>
@@ -690,8 +690,11 @@ function trendPanels(box, trend, byPqd, asOf, fillH) {
 function dailyChart(box, rows, fillH) {
   const w = Math.max(360, box.clientWidth), h = fillH ? Math.max(260, fillH) : 360, m = { t: 24, r: 16, b: 40, l: 8 }, svg = svgIn(box, w, h);
   const r2 = sel(rows);
-  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; const dayInfo = new Map(r2.map((r) => { const d = new Date(r.date_ty + 'T00:00:00'); return [r.day, { wd: WD[d.getDay()], md: (d.getMonth() + 1) + '/' + d.getDate(), wk: d.getDay() === 0 || d.getDay() === 6 }]; }));
-  const yMax = d3.max(r2, (r) => Math.max(r[F.ty()] || 0, r[F.ly()] || 0)) || 1;
+  // selling days only: weekends and holidays stay on the axis (greyed) but get no point or bar, so a handful of weekend invoices can't drag the line down
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], isWk = (s) => { const d = new Date(s + 'T00:00:00').getDay(); return d === 0 || d === 6; };
+  const sellTy = (r) => r.sell_ty != null ? r.sell_ty === '1' : !isWk(r.date_ty), sellLy = (r) => r.sell_ly != null ? r.sell_ly === '1' : !isWk(r.date_ly);
+  const dayInfo = new Map(r2.map((r) => { const d = new Date(r.date_ty + 'T00:00:00'); return [r.day, { wd: WD[d.getDay()], md: (d.getMonth() + 1) + '/' + d.getDate(), wk: !sellTy(r), hol: !sellTy(r) && !isWk(r.date_ty) }]; }));
+  const yMax = d3.max(r2, (r) => Math.max(sellTy(r) ? r[F.ty()] || 0 : 0, sellLy(r) ? r[F.ly()] || 0 : 0)) || 1;
   const left = m.l + textW(svg, fmt(yMax), 11) + 8;
   const x = d3.scaleBand(r2.map((r) => r.day), [left, w - m.r]).paddingInner(0.4);
   const y = d3.scaleLinear([0, yMax * 1.12], [h - m.b, m.t]);
@@ -699,13 +702,14 @@ function dailyChart(box, rows, fillH) {
   svg.append('g').attr('class', 'axis tick').attr('transform', `translate(${left},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(fmt).tickSize(0)).attr('font-size', null).attr('font-family', null).select('.domain').remove();
   const xa = svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).tickSize(0).tickFormat((d) => (dayInfo.get(d) || {}).wd || d)).attr('font-size', null).attr('font-family', null); xa.select('.domain').remove(); xa.selectAll('text').attr('font-weight', (d) => dayInfo.get(d).wk ? 400 : 700).attr('opacity', (d) => dayInfo.get(d).wk ? .55 : 1);
   svg.selectAll('.xd').data(r2).join('text').attr('class', 'lab muted').attr('x', (r) => x(r.day) + x.bandwidth() / 2).attr('y', h - m.b + 26).attr('text-anchor', 'middle').attr('font-size', 10).attr('opacity', (r) => dayInfo.get(r.day).wk ? .55 : 1).text((r) => dayInfo.get(r.day).md);
-  svg.selectAll('.lb').data(r2).join('rect').attr('x', (r) => x(r.day)).attr('y', (r) => y(r[F.ly()])).attr('width', x.bandwidth()).attr('height', (r) => y(0) - y(r[F.ly()])).attr('rx', 2).attr('fill', LY);
-  const tyRows = r2.filter((r) => r[F.ty()] != null && r[F.ty()] !== 0);
-  const line = d3.line().defined((r) => r[F.ty()] != null && r[F.ty()] !== 0).x((r) => x(r.day) + x.bandwidth() / 2).y((r) => y(r[F.ty()]));
+  svg.selectAll('.xh').data(r2.filter((r) => dayInfo.get(r.day).hol)).join('text').attr('class', 'lab muted').attr('x', (r) => x(r.day) + x.bandwidth() / 2).attr('y', h - m.b + 37).attr('text-anchor', 'middle').attr('font-size', 9).attr('opacity', .7).text('holiday');
+  svg.selectAll('.lb').data(r2.filter(sellLy)).join('rect').attr('x', (r) => x(r.day)).attr('y', (r) => y(r[F.ly()])).attr('width', x.bandwidth()).attr('height', (r) => y(0) - y(r[F.ly()])).attr('rx', 2).attr('fill', LY);
+  const tyRows = r2.filter((r) => sellTy(r) && r[F.ty()] != null && r[F.ty()] !== 0);
+  const line = d3.line().defined((r) => sellTy(r) && r[F.ty()] != null && r[F.ty()] !== 0).x((r) => x(r.day) + x.bandwidth() / 2).y((r) => y(r[F.ty()]));
   svg.append('path').datum(r2.filter((r) => r[F.ty()] != null)).attr('d', line).attr('fill', 'none').attr('stroke', TY).attr('stroke-width', 2.5).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
   svg.selectAll('.pt').data(tyRows).join('circle').attr('cx', (r) => x(r.day) + x.bandwidth() / 2).attr('cy', (r) => y(r[F.ty()])).attr('r', 3).attr('fill', TY);
   if (x.bandwidth() > 22) svg.selectAll('.vl').data(tyRows).join('text').attr('class', 'lab').attr('x', (r) => x(r.day) + x.bandwidth() / 2).attr('y', (r) => y(r[F.ty()]) - 8).attr('text-anchor', 'middle').attr('font-size', 10).text((r) => fmt(r[F.ty()]));
-  svg.append('rect').attr('x', left).attr('y', m.t).attr('width', w - m.r - left).attr('height', h - m.b - m.t).attr('fill', 'transparent').on('mousemove', (ev) => { const mx = d3.pointer(ev)[0]; const i = Math.max(0, Math.min(r2.length - 1, Math.floor((mx - left) / x.step()))); const r = r2[i]; showTip(box, ev, `<div style="color:var(--cds-text-secondary)">Day ${r.day}</div><div><span style="display:inline-block;width:9px;height:9px;background:${TY};margin-right:4px"></span>${mdy(r.date_ty)}: ${r[F.ty()] == null ? 'not yet' : fmtFull(r[F.ty()])}</div><div><span style="display:inline-block;width:9px;height:9px;background:${LY};margin-right:4px"></span>${mdy(r.date_ly)}: ${fmtFull(r[F.ly()])}</div>`); }).on('mouseleave', () => hideTip(box));
+  svg.append('rect').attr('x', left).attr('y', m.t).attr('width', w - m.r - left).attr('height', h - m.b - m.t).attr('fill', 'transparent').on('mousemove', (ev) => { const mx = d3.pointer(ev)[0]; const i = Math.max(0, Math.min(r2.length - 1, Math.floor((mx - left) / x.step()))); const r = r2[i]; const tag = (s, sell, v) => sell ? '' : ` <span style="color:var(--cds-text-secondary)">(${isWk(s) ? 'weekend' : 'holiday'} — not a selling day${v ? '; ' + fmtFull(v) + ' invoiced' : ''})</span>`; showTip(box, ev, `<div style="color:var(--cds-text-secondary)">Day ${r.day}</div><div><span style="display:inline-block;width:9px;height:9px;background:${TY};margin-right:4px"></span>${mdy(r.date_ty)}: ${r[F.ty()] == null ? 'not yet' : sellTy(r) ? fmtFull(r[F.ty()]) : '—'}${r[F.ty()] == null ? '' : tag(r.date_ty, sellTy(r), r[F.ty()])}</div><div><span style="display:inline-block;width:9px;height:9px;background:${LY};margin-right:4px"></span>${mdy(r.date_ly)}: ${sellLy(r) ? fmtFull(r[F.ly()]) : '—'}${tag(r.date_ly, sellLy(r), r[F.ly()])}</div>`); }).on('mouseleave', () => hideTip(box));
 }
 
 /* share pie */
