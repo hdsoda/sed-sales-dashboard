@@ -1,7 +1,7 @@
 // Builds the nine dashboard datasets from the two Snowflake result sets.
 // Port of the Python build that was reconciled to the Power BI model (11/6/2026).
 
-const { HOLIDAY_SET: HOLIDAYS, isSellingDay } = require('./calendar');
+const { HOLIDAY_SET: HOLIDAYS, HOLIDAY_NAMES, isSellingDay } = require('./calendar');
 
 const SEGMENT_MAP = {
   'ADULT ENTERTAIN': 'ON-PREMISE', 'AIRLINE TERMINA': 'ON-PREMISE', 'ALTERNATIVE LIF': 'ON-PREMISE', 'BANQUET/CATERER': 'ON-PREMISE',
@@ -110,7 +110,7 @@ function buildFromDaily(daily, W) {
     for (const wh of ['4', '6']) {
       const t = byDay.get(dt + '|' + wh), l = byDay.get(ly + '|' + wh), open = dt <= W.as_of;
       // sell_ty / sell_ly: whether each date is a selling day (Mon–Fri, not a holiday); the chart plots selling days only
-      mtd_daily.push({ day: String(d), date_ty: dt, date_ly: ly, wh, sell_ty: isSellingDay(dt) ? '1' : '0', sell_ly: isSellingDay(ly) ? '1' : '0', ce_ty: open ? r2(t ? t.ce : 0) : '', gp_ty: open ? r2(t ? t.gp : 0) : '', ce_ly: r2(l ? l.ce : 0), gp_ly: r2(l ? l.gp : 0) });
+      mtd_daily.push({ day: String(d), date_ty: dt, date_ly: ly, wh, sell_ty: isSellingDay(dt) ? '1' : '0', sell_ly: isSellingDay(ly) ? '1' : '0', hol_ty: HOLIDAY_NAMES[dt] || '', hol_ly: HOLIDAY_NAMES[ly] || '', ce_ty: open ? r2(t ? t.ce : 0) : '', gp_ty: open ? r2(t ? t.gp : 0) : '', ce_ly: r2(l ? l.ce : 0), gp_ly: r2(l ? l.gp : 0) });
     }
   }
   return { ytd_pqd, mtd_pqd, monthly_pqd, mtd_daily };
