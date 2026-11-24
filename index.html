@@ -638,11 +638,14 @@ function changeBars(box, rows, nameKey, sortByChange, fillH) {
   const y = d3.scaleBand(rows2.map((r) => r[nameKey]), [8, h - 20]).paddingInner(0.35);
   // zebra bands behind alternate rows (name through bar), with a hairline between rows, so each segment reads as its own strip
   const band = svg.append('g').attr('class', 'zebra');
-  band.selectAll('rect').data(rows2.filter((r, i) => i % 2 === 0)).join('rect').attr('x', 4).attr('width', w - 8).attr('y', (r) => y(r[nameKey]) - (y.step() - y.bandwidth()) / 2).attr('height', y.step()).attr('rx', 3).attr('fill', '#eef0f4');
-  band.selectAll('line').data(rows2.slice(0, -1)).join('line').attr('x1', 4).attr('x2', w - 4).attr('y1', (r) => y(r[nameKey]) + y.bandwidth() + (y.step() - y.bandwidth()) / 2).attr('y2', (r) => y(r[nameKey]) + y.bandwidth() + (y.step() - y.bandwidth()) / 2).attr('stroke', '#dfe2e8');
+  band.selectAll('rect').data(rows2.filter((r, i) => i % 2 === 0)).join('rect').attr('x', 4).attr('width', x1 - 4).attr('y', (r) => y(r[nameKey]) - (y.step() - y.bandwidth()) / 2).attr('height', y.step()).attr('rx', 3).attr('fill', '#eef0f4');
+  band.selectAll('line').data(rows2.slice(0, -1)).join('line').attr('x1', 4).attr('x2', x1).attr('y1', (r) => y(r[nameKey]) + y.bandwidth() + (y.step() - y.bandwidth()) / 2).attr('y2', (r) => y(r[nameKey]) + y.bandwidth() + (y.step() - y.bandwidth()) / 2).attr('stroke', '#dfe2e8');
   svg.append('g').attr('class', 'gridl').selectAll('line').data(x.ticks(nTicks).filter((t) => t !== 0)).join('line').attr('x1', (t) => x(t)).attr('x2', (t) => x(t)).attr('y1', 8).attr('y2', h - 20).attr('stroke-dasharray', '3 3');
-  svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 8).attr('y2', h - 20).attr('stroke', 'var(--cds-chart-axis)');
-  svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - 20})`).call(d3.axisBottom(x).tickValues(x.ticks(nTicks)).tickFormat(fmtAxis).tickSize(0)).attr('font-size', null).attr('font-family', null).select('.domain').remove();
+  // visible axes: a y axis at the left edge of the plot (names sit to its left), an x axis along the bottom with tick marks, and the zero line
+  svg.append('line').attr('x1', x0).attr('x2', x0).attr('y1', 8).attr('y2', h - 20).attr('stroke', '#8a93a3').attr('stroke-width', 1.2);
+  svg.append('line').attr('x1', x0).attr('x2', x1).attr('y1', h - 20).attr('y2', h - 20).attr('stroke', '#8a93a3').attr('stroke-width', 1.2);
+  svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 8).attr('y2', h - 20).attr('stroke', '#6b7280');
+  svg.append('g').attr('class', 'axis tick').attr('transform', `translate(0,${h - 20})`).call(d3.axisBottom(x).tickValues(x.ticks(nTicks)).tickFormat(fmtAxis).tickSize(5).tickPadding(4)).attr('font-size', null).attr('font-family', null).call((g) => { g.select('.domain').remove(); g.selectAll('.tick line').attr('stroke', '#8a93a3'); });
   const g = svg.selectAll('.r').data(rows2).join('g').attr('transform', (r) => `translate(0,${y(r[nameKey])})`);
   g.append('rect').attr('x', (r) => Math.min(x(0), x(r[F.chg()]))).attr('width', (r) => Math.abs(x(r[F.chg()]) - x(0))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', (r) => r[F.chg()] < 0 ? DOWN : UP);
   g.append('text').attr('class', 'cat').attr('x', x0 - 8).attr('text-anchor', 'end').attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text((r) => r[nameKey]);
