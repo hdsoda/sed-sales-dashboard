@@ -663,7 +663,7 @@ function movers(box, rows, nameKey, up, keep, fillH) {
 function trendPanels(box, trend, byPqd, asOf, fillH) {
   const w = Math.max(320, box.clientWidth);
   const tys = Number(asOf.slice(0, 4)), lastMonth = Number(asOf.slice(5, 7)) - 1; // last complete month this year
-  const pqds = sel(byPqd).filter((r) => r.scope === 'YTD' && r.pqd !== 'THC').sort((a, b) => b.ce_ty - a.ce_ty).map((r) => r);
+  const pqds = sel(byPqd).filter((r) => r.scope === 'YTD' && r.pqd !== 'THC').sort((a, b) => b[F.ty()] - a[F.ty()]).map((r) => r);
   const cols = w > 560 ? 3 : 2, pw = (w - (cols - 1) * 12) / cols, rowsN = Math.ceil(pqds.length / cols), ph = fillH && rowsN ? Math.max(80, (fillH - (rowsN - 1) * 12) / rowsN) : 205, h = rowsN * (ph + 12) - 12;
   const svg = svgIn(box, w, h); const m = { t: 34, r: 10, b: 20, l: 10 };
   pqds.forEach((p, i) => {
@@ -1048,7 +1048,7 @@ dash.onData(() => {
       put('t-today-ty', fmt(td[F.ty()])); put('t-today-d', mdy(td.date_ty) + ' · ' + fmtS(c) + ' (' + pct(p2) + ') vs last year', c);
       put('t-today-ly', fmt(td[F.ly()])); put('t-today-ld', mdy(td.date_ly)); } }
   const order = ['AB', 'CONSTELLATION', 'OTHER MALT', 'N/A', 'WINE', 'SPIRITS', 'THC'];
-  const pqdRows = (scope) => byPqd ? sel(byPqd).filter((r) => r.scope === scope).sort((a, b) => b.ce_ty - a.ce_ty) : null;
+  const pqdRows = (scope) => byPqd ? sel(byPqd).filter((r) => r.scope === scope).sort((a, b) => b[F.ty()] - a[F.ty()]) : null; // largest to smallest by the metric on view
   const page = state.page;
   const draw = (id, fn) => { const box = document.getElementById(id); if (!box || box.closest('.page').hidden) return; fn(box); };
   // tables first: their natural height is what the charts beside them are fitted to
@@ -1059,7 +1059,7 @@ dash.onData(() => {
   if (page === 'home') homeCards({ W, tot, byPqd, daily, sup, bf, seg, ch });
   addDlButtons();
   // what each visual exports (the rows it is drawn from, both metrics side by side)
-  const top10 = (rows, keep) => rows ? sel(rows).filter((r) => r.rank <= 10 && (!keep || keep(r))).sort((a, b) => b.ce_ty - a.ce_ty).slice(0, 10) : null;
+  const top10 = (rows, keep) => rows ? sel(rows).filter((r) => r.rank <= 10 && (!keep || keep(r))).sort((a, b) => b[F.ty()] - a[F.ty()]).slice(0, 10) : null;
   const top20 = (rows, keep) => rows ? sel(rows).filter((r) => r.rank <= 20 && (!keep || keep(r))).sort((a, b) => a.rank - b.rank) : null;
   const gain = (rows, keep) => rows ? sel(rows).filter((r) => !keep || keep(r)).sort((a, b) => b[F.chg()] - a[F.chg()]).slice(0, 5) : null;
   const drop = (rows, keep) => rows ? sel(rows).filter((r) => !keep || keep(r)).sort((a, b) => a[F.chg()] - b[F.chg()]).slice(0, 5) : null;
@@ -1075,10 +1075,10 @@ dash.onData(() => {
   if (page === 'ytd-pqd') { if (byPqd) draw('c-pqd-ytd', (b) => groupedBars(b, pqdRows('YTD'), 'pqd', fill['c-pqd-ytd'])); if (trend && byPqd && W) draw('c-trend', (b) => trendPanels(b, trend, byPqd, W.as_of, fill['c-trend'])); }
   if (page === 'mtd-day' && daily) draw('c-daily', (b) => dailyChart(b, daily, fill['c-daily']));
   if (page === 'mtd-pqd' && byPqd) { draw('c-pqd-mtd', (b) => groupedBars(b, pqdRows('MTD'), 'pqd', fill['c-pqd-mtd'])); draw('c-pqd-mtdchg', (b) => changeBars(b, pqdRows('MTD'), 'pqd', true, fill['c-pqd-mtdchg'])); }
-  if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBarsSplit(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'supplier', fill['c-sup-bar'])); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true, null, fill['c-sup-up'])); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false, null, fill['c-sup-down'])); }
-  if (page === 'ytd-brand' && bf) { draw('c-bf-bar', (b) => groupedBars(b, sel(bf).filter((r) => r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty), 'brand_family', fill['c-bf-bar'])); draw('c-bf-up', (b) => movers(b, sel(bf), 'brand_family', true, null, fill['c-bf-up'])); draw('c-bf-down', (b) => movers(b, sel(bf), 'brand_family', false, null, fill['c-bf-down'])); }
+  if (page === 'ytd-supplier' && sup) { draw('c-sup-bar', (b) => groupedBarsSplit(b, sel(sup).filter((r) => r.rank <= 10).sort((a, b2) => b2[F.ty()] - a[F.ty()]), 'supplier', fill['c-sup-bar'])); draw('c-sup-up', (b) => movers(b, sel(sup), 'supplier', true, null, fill['c-sup-up'])); draw('c-sup-down', (b) => movers(b, sel(sup), 'supplier', false, null, fill['c-sup-down'])); }
+  if (page === 'ytd-brand' && bf) { draw('c-bf-bar', (b) => groupedBars(b, sel(bf).filter((r) => r.rank <= 10).sort((a, b2) => b2[F.ty()] - a[F.ty()]), 'brand_family', fill['c-bf-bar'])); draw('c-bf-up', (b) => movers(b, sel(bf), 'brand_family', true, null, fill['c-bf-up'])); draw('c-bf-down', (b) => movers(b, sel(bf), 'brand_family', false, null, fill['c-bf-down'])); }
   if (page === 'ytd-segment' && seg) { draw('c-seg-pie', (b) => pieChart(b, seg, fill['c-seg-pie'])); draw('c-seg-bar', (b) => groupedBars(b, sel(seg), 'segment', fill['c-seg-bar'])); draw('c-seg-chg', (b) => changeBars(b, sel(seg), 'segment', false, fill['c-seg-chg'])); }
-  if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2.ce_ty - a.ce_ty).slice(0, 10), 'chain', fill['c-ch-bar'])); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true, (r) => r.is_chain, fill['c-ch-up'])); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false, (r) => r.is_chain, fill['c-ch-down'])); }
+  if (page === 'ytd-chain' && ch) { draw('c-ch-bar', (b) => groupedBars(b, sel(ch).filter((r) => r.is_chain && r.rank <= 10).sort((a, b2) => b2[F.ty()] - a[F.ty()]).slice(0, 10), 'chain', fill['c-ch-bar'])); draw('c-ch-up', (b) => movers(b, sel(ch), 'chain', true, (r) => r.is_chain, fill['c-ch-up'])); draw('c-ch-down', (b) => movers(b, sel(ch), 'chain', false, (r) => r.is_chain, fill['c-ch-down'])); }
   // failed sources
   $$('.chart').forEach((box) => { const ids = (box.dataset.source || '').split(' '); if (ids.some((id) => dash.data(id).status === 'error')) { box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:80px;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)"><span style="width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad);display:inline-block"></span>Failed to load</div>'; } });
   if (!drawn && byPqd) { drawn = true; const named = document.getElementById(location.hash.slice(1)); if (named) named.scrollIntoView(); }
