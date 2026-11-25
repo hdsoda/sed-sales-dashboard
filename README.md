@@ -1,9 +1,11 @@
 # SED Sales Dashboard — live on Azure, fed by Snowflake
 
-A live version of the SED sales dashboard. The page (`index.html`) is served by **Azure Static Web Apps**;
-on every open it calls `/api/data`, an **Azure Function** (`api/`) that queries the `SED_DB.PUBLIC` views in
-Snowflake over key-pair auth and returns the nine datasets the page renders. GitHub Actions deploys the
-site on every push to `main`. Sign-in is required (Microsoft account) and only invited users get in.
+A live version of the SED sales dashboard. The page (`index.html`) is served by **Azure Static Web Apps**.
+On open it loads `data.json`, the daily build written by the refresh workflow. It calls `/api/data`, an
+**Azure Function** (`api/`) that queries the `SED_DB.PUBLIC` views in Snowflake over key-pair auth and returns
+the nine datasets the page renders, only for a live refresh: when someone clicks refresh, or automatically
+when `data.json` is from an earlier day. GitHub Actions deploys the site on every push to `main`.
+No sign-in is required: anyone with the link can open the site.
 
 ```
 Browser ──> Static Web App (index.html)
@@ -18,12 +20,15 @@ in-scope = items with a PQD; windows anchored on the last complete selling day (
 
 ## One-time setup (about 20 minutes)
 
-### 1. Snowflake — register the public key (done as yourself, no admin)
+### 1. Snowflake — register the public key (needs an account admin)
+You can't do this step yourself: this account requires the `MODIFY PROGRAMMATIC AUTHENTICATION METHODS`
+privilege on the user, so a user can't run `ALTER USER … SET RSA_PUBLIC_KEY` for their own login. Rob (ACCOUNTADMIN)
+registered the current key on 11/12/2026. Send the public key body and the fingerprint to an admin, who runs:
 ```sql
-ALTER USER HSOWDA SET RSA_PUBLIC_KEY = '<public key body>';
-DESC USER HSOWDA;  -- RSA_PUBLIC_KEY_FP must equal the fingerprint you were given
+ALTER USER <user> SET RSA_PUBLIC_KEY = '<public key body>';
+DESC USER <user>;  -- RSA_PUBLIC_KEY_FP must equal the fingerprint you were given
 ```
-The matching private key goes into Azure in step 3 and nowhere else.
+The matching private key goes only into the GitHub secret (step 2) and the Azure setting (step 3).
 
 ### 2. GitHub — push this repo and add the secrets
 Push these files to `main`. Then **Settings → Secrets and variables → Actions → New repository secret**, three times:
@@ -62,16 +67,19 @@ Save. `https://<your-app>.azurestaticapps.net/api/data` answers `{"status":"pend
 payload once it's done (~90 s); the page handles that polling itself.
 
 ### 4. Who can see it
-`staticwebapp.config.json` requires the custom role **`sed`** on every route. To let someone in:
-Static Web App → **Role management** → **Invite** → their email, role `sed`, expiry up to 7 days → send
-them the invitation link. Up to 25 invitations on the Free plan. Nobody else — including signed-in
-Microsoft users who weren't invited — sees anything but `no-access.html`.
+Anyone with the link. Both routes in `staticwebapp.config.json` allow `["anonymous"]`, so there is no sign-in.
+The invite-only setup and its `no-access.html` page were removed on 11/12/2026.
 
-To make it open to anyone with the link instead, change both `allowedRoles` entries to `["anonymous"]`.
+To require sign-in again, change both `allowedRoles` entries to a custom role (for example `["sed"]`), invite people
+under Static Web App → **Role management** → **Invite** (up to 25 invitations on the Free plan), and add a page for
+people who weren't invited.
 
 ## Day to day
 - The page shows which build it's on (daily or live) and when it was queried; **refresh from Snowflake now** pulls live.
-- The morning job runs Mon–Sat; run it by hand any time from the repo's **Actions** tab (**Run workflow**).
+- The morning job is scheduled every 30 minutes from 5:15 to 8:45 AM Central, Monday to Saturday. The first run that
+  finds no build for today does the build; the others stop early. You can also run it by hand from the repo's
+  **Actions** tab (**Run workflow**). The cron times are in UTC, so during daylight saving time the same schedule
+  runs 6:15 to 9:45 AM Central.
 - Every push to `main` redeploys in a couple of minutes; the function and page deploy together.
 - Cost: Static Web App Free plan = $0; GitHub Actions ≈ 3 min/day (free tier is 2,000 min/month);
   Snowflake = one ~90 s query per build on `COMPUTE_WH` (X-Small).
@@ -86,9 +94,8 @@ Or `npm i -g @azure/static-web-apps-cli && swa start . --api-location api` to ru
 
 ## Files
 ```
-index.html                  the dashboard (D3); fetches /api/data, then renders
-no-access.html              shown to signed-in users who weren't invited
-staticwebapp.config.json    auth routes (Microsoft sign-in, role "sed"), API runtime
+index.html                  the dashboard (D3); loads data.json, calls /api/data only for a live refresh
+staticwebapp.config.json    routes (all anonymous, no sign-in), API runtime
 data.json                   the daily build (written by the refresh workflow; the page loads it first)
 api/data/index.js           GET /api/data — submits the query async, 202 while running, 200 with the payload
 api/lib/snowflake.js        SQL REST API client with key-pair JWT (no SDK): runSql, submit, check
@@ -97,5 +104,5 @@ api/lib/calendar.js         holidays + selling-day rule shared by the SQL window
 api/lib/build.js            datasets from the result rows (windows, YTD/MTD, daily, dims)
 api/test-connection.js      smoke test
 scripts/build-data.js       what the refresh workflow runs: query → data.json
-.github/workflows/refresh-data.yml   the 6:15 AM job (and Run workflow button)
+.github/workflows/refresh-data.yml   the morning job: every 30 min, 5:15–8:45 AM Central, Mon–Sat (and Run workflow button)
 ```
